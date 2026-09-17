@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "firming"
-version = "0.4.0"
+version = "0.4.1.dev0"
 description = "Firm prices on AI inference. The batch client: place jobs on a venue's batch lane at 50% off list and rescue them at the standard lane before the deadline. The sidecar and the price guarantee ship here next."
 readme = "README.md"
 license = "Apache-2.0"
