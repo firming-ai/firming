@@ -7,7 +7,7 @@
 
 # Deadline flexibility report — v0
 
-Generated 2026-08-23T03:34:38+00:00 by `tools/flexibility_report.py` against the `offpeak` price sheet dated **2026-08-21**. Every dollar below traces to a row on that sheet; a model that is not on it renders as an em dash and is counted as unpriced, never as free.
+Generated 2026-08-23T03:34:38+00:00 by `tools/flexibility_report.py` against the `firming` price sheet dated **2026-08-21**. Every dollar below traces to a row on that sheet; a model that is not on it renders as an em dash and is counted as unpriced, never as free.
 
 ## What the window cost
 
@@ -20,7 +20,7 @@ Generated 2026-08-23T03:34:38+00:00 by `tools/flexibility_report.py` against the
 
 The annualised figure is a **projection of the observed window**, not a forecast: it assumes the window is representative, and the multiplier is printed so a reader who disagrees can redo it in one step.
 
-**8 of 38 log rows are unpriced** — `deepseek-chat`, `text-embedding-3-large` are not on the bundled sheet. They are excluded from every total above and counted here, rather than silently valued at zero: a price nobody published is not a price of nothing, and a fleet is not smaller because this sheet is missing a row. Register a rate with `offpeak.prices.register_price()` and re-run to fold them in. **Every total in this report is therefore a floor.**
+**8 of 38 log rows are unpriced** — `deepseek-chat`, `text-embedding-3-large` are not on the bundled sheet. They are excluded from every total above and counted here, rather than silently valued at zero: a price nobody published is not a price of nothing, and a fleet is not smaller because this sheet is missing a row. Register a rate with `firming.prices.register_price()` and re-run to fold them in. **Every total in this report is therefore a floor.**
 
 ## The classification rule
 
@@ -73,7 +73,7 @@ Annualised on the same 14.0x multiplier as the headline: **$1,956.68 a year**, o
 
 ## The arithmetic
 
-Rates are USD per 1M tokens from the `offpeak` sheet dated **2026-08-21**, one line per log row so every total above can be re-derived by hand.
+Rates are USD per 1M tokens from the `firming` sheet dated **2026-08-21**, one line per log row so every total above can be re-derived by hand.
 
 | job class | model | venue · tier | in x rate | out x rate | = spend | class | incremental |
 |---|---|---|---|---|---|---|---|

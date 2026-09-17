@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import pytest
 
-from offpeak.venues.anthropic_batch import AnthropicBatch
-from offpeak.venues.base import BatchState, iso_utc
-from offpeak.venues.gemini_batch import GeminiBatch
-from offpeak.venues.groq_batch import GroqBatch
-from offpeak.venues.mistral_batch import MistralBatch
-from offpeak.venues.openai_batch import OpenAIBatch
+from firming.venues.anthropic_batch import AnthropicBatch
+from firming.venues.base import BatchState, iso_utc
+from firming.venues.gemini_batch import GeminiBatch
+from firming.venues.groq_batch import GroqBatch
+from firming.venues.mistral_batch import MistralBatch
+from firming.venues.openai_batch import OpenAIBatch
 
 
 def obj(**fields):

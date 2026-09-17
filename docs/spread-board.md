@@ -1,6 +1,6 @@
 # The Spread Board
 
-`offpeak` rests on a claim: **intelligence has a time value.** The token side of
+`firming` rests on a claim: **intelligence has a time value.** The token side of
 that claim is already settled, and it is wider than the headline discount.
 
 - **Patience is priced at 50% off.** OpenAI and Anthropic both publish batch
@@ -17,7 +17,7 @@ that claim is already settled, and it is wider than the headline discount.
     are both defined off that list (2x and 0.5x), so the promo moves the
     dollars and leaves the ratio: **the 4x is the durable figure, the prices
     are the perishable ones.** Both are in the SDK rather than in prose —
-    `offpeak.prices.urgency_spread("gpt-5.6-sol")` returns `4.0`, and
+    `firming.prices.urgency_spread("gpt-5.6-sol")` returns `4.0`, and
     `promo_decay()` returns the step-up the date will bring.
 
 The Spread Board marks the same claim against the other side of the trade: the
@@ -75,7 +75,7 @@ before the money is.
 
 ## Queue latency is a third table
 
-`offpeak` abandons a slow batch on a **fixed** risk buffer — 15% of the window,
+`firming` abandons a slow batch on a **fixed** risk buffer — 15% of the window,
 clamped to 1–10 minutes — because nobody had the number. `nightly/QUEUE.md`
 collects the number: a couple of tiny jobs submitted daily at each venue's
 declared window, timed from submit to completion. The desk publishes a daily
@@ -145,7 +145,7 @@ any venue.
   and a marked one are different kinds of claim, and the board should not blur
   them.
 - **Observation, not advice.** The board records what the grid did. It does not
-  forecast, and `offpeak` does not currently schedule against it — the SDK
+  forecast, and `firming` does not currently schedule against it — the SDK
   routes on published token prices alone.
 - **Carbon actuals lag** roughly two hours. The 06:30Z mark clears the 00–05 BST
   trough comfortably; the tail of the session can still be sparse.

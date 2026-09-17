@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from offpeak import parse_deadline, seconds_until
+from firming import parse_deadline, seconds_until
 
 NOW = datetime(2026, 8, 20, 22, 0, 0, tzinfo=timezone.utc)
 
@@ -70,7 +70,7 @@ def test_seconds_until():
 
 
 def test_iso_with_z_suffix_parses_on_every_supported_python():
-    # datetime.fromisoformat only learned "Z" in 3.11; offpeak supports 3.10,
+    # datetime.fromisoformat only learned "Z" in 3.11; firming supports 3.10,
     # and Z is the ISO form most real timestamps use.
     parsed = parse_deadline("2099-01-01T00:00:00Z")
     assert parsed.utcoffset() == timedelta(0)

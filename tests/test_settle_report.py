@@ -93,7 +93,7 @@ class TestUpsert:
         sr.upsert_settled_row(board, "2026-08-22-a", "| 2026-08-22-a | x |\n")
         sr.upsert_settled_row(board, "2026-08-23-b", "| 2026-08-23-b | y |\n")
         text = board.read_text()
-        assert text.startswith("# Offpeak settled runs")
+        assert text.startswith("# Firming settled runs")
         assert text.count("| 2026-08-22-a |") == 1
         assert text.rstrip().endswith("| 2026-08-23-b | y |")
 
@@ -108,7 +108,7 @@ class TestUpsert:
     def test_a_stale_header_is_repaired_and_rows_are_kept(self, tmp_path):
         board = tmp_path / "SETTLED.md"
         board.write_text(
-            "# Offpeak settled runs\n\n| old | columns |\n|---|---|\n"
+            "# Firming settled runs\n\n| old | columns |\n|---|---|\n"
             "| 2026-08-21-a | a |\n"
         )
         sr.upsert_settled_row(board, "2026-08-22-b", "| 2026-08-22-b | b |\n")

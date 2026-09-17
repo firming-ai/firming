@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Publish the bundled price sheet as dated JSON anyone can fetch.
 
-`offpeak` ships a **snapshot** of numbers other people publish, and a release is
+`firming` ships a **snapshot** of numbers other people publish, and a release is
 the only thing that moves it. That is the right default — a receipt settled today
 has to stay checkable next year against the numbers that settled it, and a
 library that silently repriced itself overnight could not offer that. But it
@@ -10,8 +10,8 @@ leaves users on whatever sheet their install happened to freeze.
 This is the other half: the same sheet, written out as data, so a user can pick
 up a newer one *deliberately* without waiting for a release.
 
-    python -m offpeak ...                       # bundled sheet, offline, default
-    offpeak.prices.load_sheet(SHEET_URL)        # opt in to a published one
+    python -m firming ...                       # bundled sheet, offline, default
+    firming.prices.load_sheet(SHEET_URL)        # opt in to a published one
 
 There is no database and no service behind that URL. It is a dated file on the
 `board-data` branch, served by whatever CDN fronts a git host, and it is
@@ -32,10 +32,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-import offpeak  # noqa: E402
-from offpeak import prices  # noqa: E402
+import firming  # noqa: E402
+from firming import prices  # noqa: E402
 
-INDEX_SCHEMA = "offpeak.price-sheet-index/1"
+INDEX_SCHEMA = "firming.price-sheet-index/1"
 
 
 def build_index(outdir: Path, current: str) -> dict:
@@ -52,7 +52,7 @@ def build_index(outdir: Path, current: str) -> dict:
     return {
         "schema": INDEX_SCHEMA,
         "latest": current,
-        "offpeak_version": offpeak.__version__,
+        "firming_version": firming.__version__,
         "sheets": [{"sheet_date": d, "path": f"{d}.json"} for d in dates],
     }
 

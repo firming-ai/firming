@@ -6,10 +6,10 @@ about the translation rather than the plumbing.
 
 import pytest
 
-import offpeak
-from offpeak import job
-from offpeak.venues.base import BatchState
-from offpeak.venues.gemini_batch import (
+import firming
+from firming import job
+from firming.venues.base import BatchState
+from firming.venues.gemini_batch import (
     GeminiBatch,
     build_requests,
     response_text,
@@ -194,7 +194,7 @@ class TestRouting:
         assert not GeminiBatch(client=object()).supports(model)
 
     def test_is_not_in_default_venues(self):
-        assert "gemini:batch" not in {v.name for v in offpeak.default_venues()}
+        assert "gemini:batch" not in {v.name for v in firming.default_venues()}
 
 
 class TestSubmit:
@@ -322,7 +322,7 @@ class TestCancel:
 
 class TestPricing:
     def test_a_gemini_quote_captures_a_real_spread(self):
-        q = offpeak.quote(
+        q = firming.quote(
             [job("gemini-3.7-flash", "hi", max_tokens=256)],
             "48h",
             venues=[GeminiBatch(client=object())],

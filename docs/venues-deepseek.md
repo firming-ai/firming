@@ -1,6 +1,6 @@
 # DeepSeek — clock-priced
 
-`deepseek:clock` is the first venue in `offpeak` that is not a batch tier.
+`deepseek:clock` is the first venue in `firming` that is not a batch tier.
 DeepSeek publishes **no batch API**. It publishes a clock instead: peak hours
 are **01:00–04:00 and 06:00–10:00 UTC, Monday through Friday**, and every
 other hour — evenings, the gap between the two blocks, the whole weekend — is
@@ -8,7 +8,7 @@ off-peak at **half the peak rate**, on input, output and cache-hit alike.
 
 That is the same 2.0x spread the batch venues sell, on a different axis. A
 batch tier prices *how long you can wait*. DeepSeek prices *when the request
-lands*. Same discount, different mechanism — and `offpeak` gives it the same
+lands*. Same discount, different mechanism — and `firming` gives it the same
 one-argument interface.
 
 !!! warning "Unverified live"
@@ -22,7 +22,7 @@ one-argument interface.
 ## Install and configure
 
 ```bash
-pip install "offpeak[deepseek]"     # an alias of the openai extra
+pip install "firming[deepseek]"     # an alias of the openai extra
 export DEEPSEEK_API_KEY=sk-...
 ```
 
@@ -36,12 +36,12 @@ Mistral and Gemini are not: a model name should not start costing money at a
 venue nobody asked for.
 
 ```python
-import offpeak
-from offpeak.venues import DeepSeekClock
+import firming
+from firming.venues import DeepSeekClock
 
-jobs = [offpeak.job("deepseek-v4-flash", f"Summarize:\n\n{d}", max_tokens=2048) for d in docs]
-results = offpeak.run(jobs, deadline="06:00", venues=[DeepSeekClock()])
-print(offpeak.receipt(results))
+jobs = [firming.job("deepseek-v4-flash", f"Summarize:\n\n{d}", max_tokens=2048) for d in docs]
+results = firming.run(jobs, deadline="06:00", venues=[DeepSeekClock()])
+print(firming.receipt(results))
 ```
 
 ## How the hold works
@@ -79,18 +79,18 @@ it. All take an aware datetime (a naive one is read as UTC) and answer in UTC.
 
 ```python
 from datetime import datetime, timezone
-from offpeak.venues.deepseek_clock import is_peak, next_offpeak_start, offpeak_until, rate_multiplier
+from firming.venues.deepseek_clock import is_peak, next_off_peak_start, off_peak_until, rate_multiplier
 
 now = datetime.now(timezone.utc)
 is_peak(now)             # True inside a weekday block
-next_offpeak_start(now)  # now if off-peak, else the end of the current block
-offpeak_until(now)       # when this off-peak stretch ends; None at peak
+next_off_peak_start(now)  # now if off-peak, else the end of the current block
+off_peak_until(now)       # when this off-peak stretch ends; None at peak
 rate_multiplier(now)     # 2.0 at peak, 1.0 off-peak
 ```
 
 Block ends are exclusive — 04:00:00 is off-peak, 03:59:59 is peak — and the
 weekend is one stretch: Friday 10:00 UTC through Monday 01:00 UTC, 63 hours,
-which `offpeak_until` answers as a single instant.
+which `off_peak_until` answers as a single instant.
 
 ## Settlement
 

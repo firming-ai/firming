@@ -38,14 +38,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-import offpeak  # noqa: E402
-from offpeak.venues.anthropic_batch import AnthropicBatch  # noqa: E402
-from offpeak.venues.deepseek_clock import DeepSeekClock  # noqa: E402
-from offpeak.venues.gemini_batch import GeminiBatch  # noqa: E402
-from offpeak.venues.groq_batch import GroqBatch  # noqa: E402
-from offpeak.venues.mistral_batch import MistralBatch  # noqa: E402
-from offpeak.venues.openai_batch import OpenAIBatch  # noqa: E402
-from offpeak.venues.qwen_batch import QwenBatch  # noqa: E402
+import firming  # noqa: E402
+from firming.venues.anthropic_batch import AnthropicBatch  # noqa: E402
+from firming.venues.deepseek_clock import DeepSeekClock  # noqa: E402
+from firming.venues.gemini_batch import GeminiBatch  # noqa: E402
+from firming.venues.groq_batch import GroqBatch  # noqa: E402
+from firming.venues.mistral_batch import MistralBatch  # noqa: E402
+from firming.venues.openai_batch import OpenAIBatch  # noqa: E402
+from firming.venues.qwen_batch import QwenBatch  # noqa: E402
 
 DEFAULT_CAP_USD = 0.05  # on total list exposure, not per run
 DEFAULT_DEADLINE = "06:00"
@@ -154,7 +154,7 @@ VENUES = {
 }
 
 
-def build_book(models, max_tokens=DEFAULT_MAX_TOKENS, limit=None) -> list[offpeak.Job]:
+def build_book(models, max_tokens=DEFAULT_MAX_TOKENS, limit=None) -> list[firming.Job]:
     """The same twenty-four lines through each venue's cheapest model.
 
     *limit* takes the first N lines instead of all of them. The quote gate
@@ -166,7 +166,7 @@ def build_book(models, max_tokens=DEFAULT_MAX_TOKENS, limit=None) -> list[offpea
     for model in models:
         for line in (LINES if limit is None else LINES[:limit]):
             jobs.append(
-                offpeak.job(model, PROMPT.format(line=line), max_tokens=max_tokens)
+                firming.job(model, PROMPT.format(line=line), max_tokens=max_tokens)
             )
     return jobs
 
@@ -254,7 +254,7 @@ def main(argv=None) -> int:
         v.log = handles
 
     # --- Gate 1: price it before spending anything. No API calls here. ---
-    q = offpeak.quote(jobs, a.deadline, venues=venues)
+    q = firming.quote(jobs, a.deadline, venues=venues)
     card = str(q)
     print(card, flush=True)
     (OUT / "quote.txt").write_text(card + "\n")
@@ -276,7 +276,7 @@ def main(argv=None) -> int:
 
     started = datetime.now().astimezone()
     try:
-        results = offpeak.run(jobs, a.deadline, venues=venues)
+        results = firming.run(jobs, a.deadline, venues=venues)
     except BaseException:
         # Nothing should reach here — run() captures provider failures — but a
         # local error or a Ctrl-C must not leave batches running at a venue.
@@ -286,7 +286,7 @@ def main(argv=None) -> int:
         raise
     finished = datetime.now().astimezone()
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     print("\n" + str(settlement), flush=True)
     (OUT / "settlement.txt").write_text(str(settlement) + "\n")
 
@@ -330,8 +330,8 @@ def main(argv=None) -> int:
         "started": started.isoformat(timespec="seconds"),
         "finished": finished.isoformat(timespec="seconds"),
         "deadline": a.deadline,
-        "price_sheet": offpeak.prices.PRICE_SHEET_DATE,
-        "offpeak_version": offpeak.__version__,
+        "price_sheet": firming.prices.PRICE_SHEET_DATE,
+        "firming_version": firming.__version__,
         "hard_cap_usd": a.cap,
         "quoted_list_usd": q.list_usd,
         "quoted_batch_usd": q.batch_usd,

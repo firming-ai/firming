@@ -1,6 +1,6 @@
 """Google Gemini Batch venue (50% off list, 24h target turnaround).
 
-Requires the ``gemini`` extra: ``pip install "offpeak[gemini]"``.
+Requires the ``gemini`` extra: ``pip install "firming[gemini]"``.
 
 The first venue here that is **not** OpenAI-shaped. OpenAI, Groq and Mistral all
 speak a JSONL file of chat-completion requests; Gemini speaks its own object
@@ -223,7 +223,7 @@ class GeminiBatch(Venue):
 
     name = "gemini:batch"
 
-    def __init__(self, client: object | None = None, *, display_name: str = "offpeak"):
+    def __init__(self, client: object | None = None, *, display_name: str = "firming"):
         self._client = client
         self.display_name = display_name
 
@@ -235,7 +235,7 @@ class GeminiBatch(Venue):
             except ImportError as exc:  # pragma: no cover
                 raise ImportError(
                     'Gemini venue requires the google-genai SDK: '
-                    'pip install "offpeak[gemini]"'
+                    'pip install "firming[gemini]"'
                 ) from exc
             self._client = genai.Client()
         return self._client

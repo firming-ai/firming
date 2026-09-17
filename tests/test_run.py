@@ -2,12 +2,12 @@
 
 import pytest
 
-import offpeak
-from offpeak import Status, job
-from offpeak.job import Result
-from offpeak.venues.anthropic_batch import build_requests
-from offpeak.venues.base import BatchState, Venue
-from offpeak.venues.openai_batch import OpenAIBatch, build_jsonl, parse_output_line
+import firming
+from firming import Status, job
+from firming.job import Result
+from firming.venues.anthropic_batch import build_requests
+from firming.venues.base import BatchState, Venue
+from firming.venues.openai_batch import OpenAIBatch, build_jsonl, parse_output_line
 
 
 class FakeVenue(Venue):
@@ -57,7 +57,7 @@ class FakeVenue(Venue):
 def test_happy_path_settles_at_batch_price():
     venue = FakeVenue()
     jobs = [job("claude-haiku-4-5", f"doc {i}") for i in range(3)]
-    results = offpeak.run(jobs, "8h", venues=[venue], poll_interval=0)
+    results = firming.run(jobs, "8h", venues=[venue], poll_interval=0)
 
     assert [r.job.id for r in results] == [j.id for j in jobs]  # input order
     assert all(r.ok for r in results)
@@ -65,7 +65,7 @@ def test_happy_path_settles_at_batch_price():
     assert results[0].text == "batch:doc 0"
     assert not venue.sync_runs and not venue.cancelled
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     assert settlement.sla_met == 3
     assert settlement.captured_pct == pytest.approx(50.0)
 
@@ -73,19 +73,19 @@ def test_happy_path_settles_at_batch_price():
 def test_deadline_risk_falls_back_to_sync():
     venue = FakeVenue(polls_to_complete=10_000)  # batch never completes
     jobs = [job("claude-haiku-4-5", "x"), job("claude-haiku-4-5", "y")]
-    results = offpeak.run(jobs, "2h", venues=[venue], poll_interval=0, risk_buffer=10**9)
+    results = firming.run(jobs, "2h", venues=[venue], poll_interval=0, risk_buffer=10**9)
 
     assert venue.cancelled == ["batch_1"]
     assert sorted(venue.sync_runs) == sorted(j.id for j in jobs)
     assert all(r.ok for r in results)
     assert all(r.job.status is Status.FELL_BACK for r in results)
     assert all(r.receipt.fell_back and r.receipt.sla_met for r in results)
-    assert offpeak.receipt(results).captured_usd == pytest.approx(0.0)
+    assert firming.receipt(results).captured_usd == pytest.approx(0.0)
 
 
 def test_fallback_none_reports_failures():
     venue = FakeVenue(polls_to_complete=10_000)
-    results = offpeak.run(
+    results = firming.run(
         [job("claude-haiku-4-5", "x")],
         "2h",
         venues=[venue],
@@ -103,14 +103,14 @@ def test_jobs_route_to_their_venue():
     anthropic = FakeVenue(prefix="claude", name="fake:anthropic")
     openai = FakeVenue(prefix="gpt-", name="fake:openai")
     jobs = [job("claude-haiku-4-5", "a"), job("gpt-5.1", "b")]
-    results = offpeak.run(jobs, "1h", venues=[anthropic, openai], poll_interval=0)
+    results = firming.run(jobs, "1h", venues=[anthropic, openai], poll_interval=0)
     assert results[0].receipt.venue == "fake:anthropic"
     assert results[1].receipt.venue == "fake:openai"
 
 
 def test_unsupported_model_is_an_error():
     with pytest.raises(ValueError, match="no venue supports"):
-        offpeak.run([job("mistral-large", "x")], "1h", venues=[FakeVenue()])
+        firming.run([job("mistral-large", "x")], "1h", venues=[FakeVenue()])
 
 
 def test_openai_jsonl_round_trip():
@@ -255,7 +255,7 @@ class BrokenVenue(FakeVenue):
 def test_submit_failure_falls_back_to_sync():
     venue = BrokenVenue()
     jobs = [job("claude-haiku-4-5", "x"), job("claude-haiku-4-5", "y")]
-    results = offpeak.run(jobs, "2h", venues=[venue], poll_interval=0)
+    results = firming.run(jobs, "2h", venues=[venue], poll_interval=0)
 
     assert venue.submit_attempts == 1
     assert sorted(venue.sync_runs) == sorted(j.id for j in jobs)
@@ -263,7 +263,7 @@ def test_submit_failure_falls_back_to_sync():
     assert all(r.job.status is Status.FELL_BACK for r in results)
     assert all(r.receipt.fell_back for r in results)
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     assert (settlement.ok, settlement.fell_back, settlement.failed) == (2, 2, 0)
 
 
@@ -271,7 +271,7 @@ def test_submit_and_sync_both_failing_report_failed_results_without_raising():
     venue = BrokenVenue(sync_error=True)
     jobs = [job("claude-haiku-4-5", "x"), job("claude-haiku-4-5", "y")]
 
-    results = offpeak.run(jobs, "2h", venues=[venue], poll_interval=0)  # must not raise
+    results = firming.run(jobs, "2h", venues=[venue], poll_interval=0)  # must not raise
 
     assert len(results) == len(jobs)  # a Result for every job
     assert all(not r.ok for r in results)
@@ -281,7 +281,7 @@ def test_submit_and_sync_both_failing_report_failed_results_without_raising():
     assert all("sync is down too" in r.error for r in results)
     assert all(not r.receipt.sla_met for r in results)
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     assert (settlement.ok, settlement.failed) == (0, 2)
 
 
@@ -291,7 +291,7 @@ def test_one_venue_failing_at_submit_leaves_the_other_untouched():
     doomed = [job("claude-haiku-4-5", "a")]
     fine = [job("gpt-5.6-luna", "b"), job("gpt-5.6-luna", "c")]
 
-    results = offpeak.run(doomed + fine, "2h", venues=[broken, healthy], poll_interval=0)
+    results = firming.run(doomed + fine, "2h", venues=[broken, healthy], poll_interval=0)
 
     by_id = {r.job.id: r for r in results}
     # The healthy venue settled on its batch tier — no rescue, no cancellation.
@@ -305,14 +305,14 @@ def test_one_venue_failing_at_submit_leaves_the_other_untouched():
     assert broken.sync_runs == [doomed[0].id]
     assert by_id[doomed[0].id].job.status is Status.FELL_BACK
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     assert (settlement.total, settlement.ok, settlement.fell_back) == (3, 3, 1)
     assert settlement.by_venue == {"fake:broken": 1, "fake:healthy": 2}
 
 
 def test_submit_failure_with_fallback_none_reports_the_provider_error():
     venue = BrokenVenue()
-    results = offpeak.run(
+    results = firming.run(
         [job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0, fallback="none"
     )
     assert not venue.sync_runs
@@ -321,7 +321,7 @@ def test_submit_failure_with_fallback_none_reports_the_provider_error():
 
 
 def test_sub_cent_totals_keep_significant_digits():
-    settlement = offpeak.Settlement(
+    settlement = firming.Settlement(
         total=3, ok=3, list_usd=0.0000238, paid_usd=0.0000119, by_venue={"fake:batch": 3}
     )
     rendered = str(settlement)
@@ -332,7 +332,7 @@ def test_sub_cent_totals_keep_significant_digits():
 
 
 def test_dollar_totals_keep_two_decimals():
-    settlement = offpeak.Settlement(total=1, ok=1, list_usd=2469.0, paid_usd=1234.5)
+    settlement = firming.Settlement(total=1, ok=1, list_usd=2469.0, paid_usd=1234.5)
     rendered = str(settlement)
     assert "list      $2,469.00" in rendered
     assert "paid      $1,234.50" in rendered
@@ -352,23 +352,23 @@ def test_dollar_totals_keep_two_decimals():
     ],
 )
 def test_usd_formatting_boundaries(amount, expected):
-    from offpeak.client import _usd
+    from firming.client import _usd
 
     assert _usd(amount) == expected
 
 
 def test_settlement_line_reports_failed_count():
     venue = BrokenVenue(sync_error=True)
-    results = offpeak.run([job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0)
-    assert "1 failed" in str(offpeak.receipt(results))
+    results = firming.run([job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0)
+    assert "1 failed" in str(firming.receipt(results))
 
 
 def test_settlement_reports_what_the_fallback_left_on_the_table():
     venue = FakeVenue(polls_to_complete=10_000)  # batch never lands
     jobs = [job("claude-haiku-4-5", "x"), job("claude-haiku-4-5", "y")]
-    results = offpeak.run(jobs, "2h", venues=[venue], poll_interval=0, risk_buffer=10**9)
+    results = firming.run(jobs, "2h", venues=[venue], poll_interval=0, risk_buffer=10**9)
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     # Both fell back and paid list; the spread the batch tier would have given
     # is exactly half of list, and that is what the desk left behind.
     assert settlement.fell_back == 2
@@ -379,15 +379,15 @@ def test_settlement_reports_what_the_fallback_left_on_the_table():
 
 def test_a_clean_batch_run_leaves_nothing_on_the_table():
     venue = FakeVenue()
-    results = offpeak.run([job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0)
-    settlement = offpeak.receipt(results)
+    results = firming.run([job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0)
+    settlement = firming.receipt(results)
     assert settlement.left_on_table_usd == 0.0
     assert "left      $" not in str(settlement)  # no line when nothing was missed
 
 
 def test_receipt_renders_sub_cent_costs_per_job():
     venue = FakeVenue()
-    results = offpeak.run([job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0)
+    results = firming.run([job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0)
     rendered = str(results[0].receipt)
     assert "fake:batch claude-haiku-4-5" in rendered
     assert "$0.0000750" in rendered  # 100 in @ $1/M + 10 out @ $5/M, batch = half
@@ -396,7 +396,7 @@ def test_receipt_renders_sub_cent_costs_per_job():
 
 def test_receipt_render_marks_a_fallback():
     venue = FakeVenue(polls_to_complete=10_000)
-    results = offpeak.run(
+    results = firming.run(
         [job("claude-haiku-4-5", "x")], "2h", venues=[venue], poll_interval=0, risk_buffer=10**9
     )
     assert "(sync fallback)" in str(results[0].receipt)
@@ -404,7 +404,7 @@ def test_receipt_render_marks_a_fallback():
 
 def test_receipt_render_shows_a_dash_for_an_unpriced_model():
     venue = FakeVenue(prefix="mystery")
-    results = offpeak.run([job("mystery-model", "x")], "2h", venues=[venue], poll_interval=0)
+    results = firming.run([job("mystery-model", "x")], "2h", venues=[venue], poll_interval=0)
     assert "list $—" in str(results[0].receipt)
 
 
@@ -427,14 +427,14 @@ def test_a_job_returned_failed_is_rescued_not_shrugged_at():
     # whether a job vanished or came back broken.
     venue = HalfBrokenVenue()
     jobs = [job("claude-haiku-4-5", f"doc {i}") for i in range(3)]
-    results = offpeak.run(jobs, "8h", venues=[venue], poll_interval=0)
+    results = firming.run(jobs, "8h", venues=[venue], poll_interval=0)
 
     assert all(r.ok for r in results)
     rescued = [r for r in results if r.receipt and r.receipt.fell_back]
     assert len(rescued) == 1
     assert venue.sync_runs == [rescued[0].job.id]
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     assert settlement.sla_met == 3
     assert settlement.fell_back == 1
 
@@ -442,7 +442,7 @@ def test_a_job_returned_failed_is_rescued_not_shrugged_at():
 def test_fallback_none_reports_the_broken_return_instead_of_rescuing():
     venue = HalfBrokenVenue()
     jobs = [job("claude-haiku-4-5", f"doc {i}") for i in range(2)]
-    results = offpeak.run(jobs, "8h", venues=[venue], fallback="none", poll_interval=0)
+    results = firming.run(jobs, "8h", venues=[venue], fallback="none", poll_interval=0)
 
     failed = [r for r in results if not r.ok]
     assert len(failed) == 1
@@ -458,7 +458,7 @@ def test_a_failed_rescue_of_a_broken_return_keeps_both_errors():
 
     venue = DoublyBrokenVenue()
     jobs = [job("claude-haiku-4-5", "doc")]
-    results = offpeak.run(jobs, "8h", venues=[venue], poll_interval=0)
+    results = firming.run(jobs, "8h", venues=[venue], poll_interval=0)
 
     assert not results[0].ok
     assert "batch returned an error" in results[0].error

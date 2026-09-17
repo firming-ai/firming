@@ -1,7 +1,7 @@
 """Anthropic Message Batches venue (50% off list, 24h completion window).
 
 Uses your own ``ANTHROPIC_API_KEY``. Requires the ``anthropic`` extra:
-``pip install "offpeak[anthropic]"``.
+``pip install "firming[anthropic]"``.
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ class AnthropicBatch(Venue):
                 from anthropic import Anthropic
             except ImportError as exc:  # pragma: no cover
                 raise ImportError(
-                    'Anthropic venue requires the anthropic SDK: pip install "offpeak[anthropic]"'
+                    'Anthropic venue requires the anthropic SDK: pip install "firming[anthropic]"'
                 ) from exc
             self._client = Anthropic()
         return self._client

@@ -1,6 +1,6 @@
-"""``python -m offpeak`` — the quote desk, from a terminal.
+"""``python -m firming`` — the quote desk, from a terminal.
 
-    python -m offpeak quote --model gpt-5.6-luna --input-tokens 800 \\
+    python -m firming quote --model gpt-5.6-luna --input-tokens 800 \\
         --output-tokens 200 --jobs 5000
 
 Prices against the bundled sheet only. No API calls, no key required.
@@ -34,8 +34,8 @@ def _quote_cmd(a: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="offpeak", description=__doc__.splitlines()[0])
-    ap.add_argument("--version", action="version", version=f"offpeak {__version__}")
+    ap = argparse.ArgumentParser(prog="firming", description=__doc__.splitlines()[0])
+    ap.add_argument("--version", action="version", version=f"firming {__version__}")
     sub = ap.add_subparsers(dest="command", required=True)
 
     q = sub.add_parser("quote", help="price a batch of jobs against a deadline")

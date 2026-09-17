@@ -15,7 +15,7 @@ page to itself is blind to everything it inherited.
 
 So this compares the page to the **sheet**: it parses per-model rates out of the
 page text ``sheet_watch`` already committed under ``watch/pages/``, lines them up
-against :mod:`offpeak.prices`, and prints what disagrees.
+against :mod:`firming.prices`, and prints what disagrees.
 
     python tools/sheet_reconcile.py --pages board/watch/pages
     python tools/sheet_reconcile.py --pages board/watch/pages --outdir board/watch
@@ -23,7 +23,7 @@ against :mod:`offpeak.prices`, and prints what disagrees.
 Same rule as the watch, for the same reason
 -------------------------------------------
 
-**It never edits the price sheet.** It reads ``offpeak.prices`` and writes a
+**It never edits the price sheet.** It reads ``firming.prices`` and writes a
 report; resolving a row is a human's job. A parser confident enough to rewrite
 ``prices.py`` from scraped text would eventually launder a table-layout change
 into a receipt, and receipts are the one thing here that must not be guessed at.
@@ -87,7 +87,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from offpeak import prices  # noqa: E402
+from firming import prices  # noqa: E402
 
 __all__ = [
     "FIELDS",
@@ -495,7 +495,7 @@ def owner(model: str) -> str | None:
 
 
 def sheet_rates(model: str) -> dict[str, float | None]:
-    """What :mod:`offpeak.prices` says *model* costs, in :data:`FIELDS` shape."""
+    """What :mod:`firming.prices` says *model* costs, in :data:`FIELDS` shape."""
     standard = prices.get_price(model)
     fast = prices.get_fast_price(model)
     return {
@@ -669,7 +669,7 @@ def latest_classifications(watch_md: str) -> dict[str, str]:
     Reconcile findings and watch classifications answer different questions —
     "is this number wrong" and "did this page move" — and a human reading a
     drift issue wants both in one place. This borrows the second rather than
-    re-deriving it: the classifier already ran, through ``offpeak``, and paid.
+    re-deriving it: the classifier already ran, through ``firming``, and paid.
     """
     latest: dict[str, tuple[str, str]] = {}
     for line in watch_md.splitlines():
@@ -693,7 +693,7 @@ def latest_classifications(watch_md: str) -> dict[str, str]:
 _HEADER = """# RECONCILE — sheet against page
 
 `tools/sheet_watch.py` asks whether a page moved since yesterday. This asks
-whether the page and `src/offpeak/prices.py` agree **today** — which is the only
+whether the page and `src/firming/prices.py` agree **today** — which is the only
 question that catches a row that was already wrong when the watch took its first
 reading, because no hash diff spans a baseline.
 
@@ -732,7 +732,7 @@ def render_reconcile_md(report: Report, classifications: dict[str, str], date: s
 
     body = [
         _HEADER,
-        f"Reconciled {date} against `offpeak.prices` sheet **{prices.sheet_date()}**.\n",
+        f"Reconciled {date} against `firming.prices` sheet **{prices.sheet_date()}**.\n",
         "| source | status | mismatches | missing | unverifiable | models on page "
         "| classification |",
         "| --- | --- | --- | --- | --- | --- | --- |",
@@ -803,7 +803,7 @@ def issue_bodies(report: Report, classifications: dict[str, str], date: str) -> 
         if not (mismatch or missing):
             continue
         lines = [
-            f"`tools/sheet_reconcile.py` on {date}, against `offpeak.prices` "
+            f"`tools/sheet_reconcile.py` on {date}, against `firming.prices` "
             f"sheet **{prices.sheet_date()}**.",
             "",
             f"Sheet watch's latest classification for this source: "
@@ -819,7 +819,7 @@ def issue_bodies(report: Report, classifications: dict[str, str], date: str) -> 
             lines += [f.line() for f in missing]
             lines += ["```", ""]
         lines += [
-            "The reconciler **never edits `src/offpeak/prices.py`**, and neither "
+            "The reconciler **never edits `src/firming/prices.py`**, and neither "
             "may CI: a page moves for reasons that are not a price change. A "
             "human settles what these mean and edits the sheet by hand.",
             "",

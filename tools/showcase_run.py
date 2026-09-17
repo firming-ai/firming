@@ -49,8 +49,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from mechanics_run import VENUES, cancel_all  # noqa: E402
 
-import offpeak  # noqa: E402
-from offpeak.quote import CHARS_PER_TOKEN  # noqa: E402
+import firming  # noqa: E402
+from firming.quote import CHARS_PER_TOKEN  # noqa: E402
 
 # Five long public-domain novels. Long ones on purpose: 2,000 passages of ~1,300
 # tokens needs ~10.4M characters, and five average novels hold about a third of
@@ -90,7 +90,7 @@ def fetch_book(book_id: int, cache_dir: Path) -> str:
         print(f"  pg{book_id}: {len(raw):>9,} chars (cached)", flush=True)
         return raw
     url = GUTENBERG.format(id=book_id)
-    req = urllib.request.Request(url, headers={"User-Agent": "offpeak-showcase/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "firming-showcase/1.0"})
     with urllib.request.urlopen(req, timeout=120) as fh:  # noqa: S310
         raw = fh.read().decode("utf-8", errors="replace")
     path.write_text(raw, encoding="utf-8")
@@ -129,7 +129,7 @@ def passages(text: str, target_chars: int) -> list[str]:
     return out
 
 
-def build_book(args, cache_dir: Path) -> list[offpeak.Job]:
+def build_book(args, cache_dir: Path) -> list[firming.Job]:
     """One job per passage, drawn round-robin so the sample spans every novel."""
     target_chars = args.passage_tokens * CHARS_PER_TOKEN
     print(f"fetching {len(BOOKS)} novels into {cache_dir}", flush=True)
@@ -157,7 +157,7 @@ def build_book(args, cache_dir: Path) -> list[offpeak.Job]:
 
     chosen = interleaved[: args.jobs]
     jobs = [
-        offpeak.job(args.model, PROMPT.format(passage=p), max_tokens=args.max_tokens)
+        firming.job(args.model, PROMPT.format(passage=p), max_tokens=args.max_tokens)
         for p in chosen
     ]
     chars = sum(len(PROMPT.format(passage=p)) for p in chosen)
@@ -175,7 +175,7 @@ def poll(ticket, venues, deadline_s: float, interval: float) -> dict:
     started = time.monotonic()
     states: dict = {}
     while True:
-        states = offpeak.status(ticket, venues=venues)
+        states = firming.status(ticket, venues=venues)
         elapsed = time.monotonic() - started
         done = sum(1 for s in states.values() if s.done)
         completed = sum(s.completed or 0 for s in states.values())
@@ -232,7 +232,7 @@ def corrected_list_usd(jobs, q, measured: float) -> float:
     will actually meter; output is already priced at the ceiling and does not
     move.
     """
-    from offpeak.prices import list_cost_usd
+    from firming.prices import list_cost_usd
 
     scale = CHARS_PER_TOKEN / measured
     total = 0.0
@@ -267,7 +267,7 @@ def main(argv=None) -> int:
     venue.log = handles
 
     # --- Gate: price it before spending anything. No API calls here. ---
-    q = offpeak.quote(jobs, a.deadline, venues=[venue])
+    q = firming.quote(jobs, a.deadline, venues=[venue])
     card = str(q)
     print("\n" + card, flush=True)
     (out / "quote.txt").write_text(card + "\n")
@@ -303,11 +303,11 @@ def main(argv=None) -> int:
 
     started = datetime.now().astimezone()
     try:
-        ticket = offpeak.submit(jobs, a.deadline, venues=[venue])
+        ticket = firming.submit(jobs, a.deadline, venues=[venue])
         ticket.save(out / "ticket.json")
         print(f"  ticket saved to {out / 'ticket.json'}", flush=True)
 
-        deadline_s = offpeak.seconds_until(offpeak.parse_deadline(a.deadline))
+        deadline_s = firming.seconds_until(firming.parse_deadline(a.deadline))
         states = poll(ticket, [venue], deadline_s, a.poll_interval)
 
         stragglers = {k: s for k, s in states.items() if not s.done}
@@ -324,7 +324,7 @@ def main(argv=None) -> int:
         else:
             print("\nall batches complete, no stragglers — collecting", flush=True)
 
-        results = offpeak.collect(ticket, venues=[venue])
+        results = firming.collect(ticket, venues=[venue])
     except BaseException:
         traceback.print_exc()
         print("\ncancelling recorded handles server-side...", flush=True)
@@ -332,7 +332,7 @@ def main(argv=None) -> int:
         raise
     finished = datetime.now().astimezone()
 
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     print("\n" + str(settlement), flush=True)
     (out / "settlement.txt").write_text(str(settlement) + "\n")
 
@@ -368,8 +368,8 @@ def main(argv=None) -> int:
         "started": started.isoformat(timespec="seconds"),
         "finished": finished.isoformat(timespec="seconds"),
         "deadline": a.deadline,
-        "price_sheet": offpeak.prices.PRICE_SHEET_DATE,
-        "offpeak_version": offpeak.__version__,
+        "price_sheet": firming.prices.PRICE_SHEET_DATE,
+        "firming_version": firming.__version__,
         "hard_cap_usd": a.cap,
         "quoted_list_usd": q.list_usd,
         "quoted_batch_usd": q.batch_usd,

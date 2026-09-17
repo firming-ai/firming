@@ -30,13 +30,13 @@ What was and was not verified from the documentation, and when:
   output for them. The same page prices the Beijing region separately, in a
   different currency, and runs its promotions per region — the sheet holds
   the **international** row only, so a ``region="cn"`` run settles against a
-  rate that is not that region's. See :mod:`offpeak.prices`.
+  rate that is not that region's. See :mod:`firming.prices`.
 * **Not verified**: that the price is constant across the window. The docs
   publish one batch rate and one window range and say nothing about the two
   interacting, which is read here as "the window is free" — the same term
   structure Groq publishes, where a longer window buys completion probability
   and not price. If Alibaba ever prices the curve, this docstring is wrong
-  and :data:`~offpeak.prices.BATCH_DISCOUNT` stops covering it.
+  and :data:`~firming.prices.BATCH_DISCOUNT` stops covering it.
 * **Not verified**: the Singapore model list beyond the four the batch page
   names (``qwen-max``, ``qwen-plus``, ``qwen-flash``, ``qwen-turbo``), and
   whether the versioned ids the pricing page lists are batchable there. A
@@ -44,16 +44,16 @@ What was and was not verified from the documentation, and when:
 
 The API is OpenAI-shaped end to end — ``/v1/files``, ``/v1/batches``, the
 same JSONL in and out, the same status vocabulary — so this driver is
-:class:`~offpeak.venues.openai_batch.OpenAIBatch` with a different client, a
-region, and a window, exactly the way :class:`~offpeak.venues.groq_batch.GroqBatch`
+:class:`~firming.venues.openai_batch.OpenAIBatch` with a different client, a
+region, and a window, exactly the way :class:`~firming.venues.groq_batch.GroqBatch`
 is. The JSONL builder and the output parser are reused, not copied.
 
 ``max_tokens`` is passed through as the caller spelled it. Qwen ids do not
 match the OpenAI driver's ``max_completion_tokens`` rewrite table, so the
-inherited :func:`~offpeak.venues.openai_batch.body_params` leaves them alone.
+inherited :func:`~firming.venues.openai_batch.body_params` leaves them alone.
 
 Requires the ``qwen`` extra (an alias of ``openai``):
-``pip install "offpeak[qwen]"``.
+``pip install "firming[qwen]"``.
 """
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ class QwenBatch(OpenAIBatch):
                 from openai import OpenAI
             except ImportError as exc:  # pragma: no cover
                 raise ImportError(
-                    'Qwen venue requires the openai SDK: pip install "offpeak[qwen]"'
+                    'Qwen venue requires the openai SDK: pip install "firming[qwen]"'
                 ) from exc
             key = next((os.environ[n] for n in _KEY_ENV if os.environ.get(n)), None)
             if not key:
@@ -174,7 +174,7 @@ class QwenBatch(OpenAIBatch):
         from .openai_batch import _ENDPOINT, build_jsonl
 
         upload = self.client.files.create(
-            file=("offpeak_batch.jsonl", build_jsonl(jobs)), purpose="batch"
+            file=("firming_batch.jsonl", build_jsonl(jobs)), purpose="batch"
         )
         batch = self.client.batches.create(
             input_file_id=upload.id,

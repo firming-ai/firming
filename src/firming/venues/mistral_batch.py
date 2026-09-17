@@ -1,6 +1,6 @@
 """Mistral Batch venue (50% off list, deadline set per job).
 
-Requires the ``mistral`` extra: ``pip install "offpeak[mistral]"``.
+Requires the ``mistral`` extra: ``pip install "firming[mistral]"``.
 
 .. warning::
    **The batch tier is behind billing, and this code cannot open it.** On
@@ -22,7 +22,7 @@ Requires the ``mistral`` extra: ``pip install "offpeak[mistral]"``.
 
 Mistral's batch API is OpenAI-shaped at both ends and unlike it in the middle.
 The JSONL that goes in and the JSONL that comes out are near enough identical —
-which is why :func:`~offpeak.venues.openai_batch.parse_output_line` is reused
+which is why :func:`~firming.venues.openai_batch.parse_output_line` is reused
 verbatim rather than reimplemented — but the job in between is described
 differently, in three ways that matter.
 
@@ -35,14 +35,14 @@ quietly running every job on the first job's model.
 
 **The deadline is a parameter.** ``timeout_hours`` is Mistral's completion
 window, set per job rather than fixed at 24h. That is the same dimension Groq
-exposes as ``completion_window``, and the same thing ``offpeak`` calls a
+exposes as ``completion_window``, and the same thing ``firming`` calls a
 deadline — so it is plumbed through rather than left on its default.
 
 **The status vocabulary is its own.** Seven states, mapped in
 :data:`_STATUS` onto the four this library uses.
 
 Prices are on the bundled sheet as of 2026-08-23 and the batch tier is the
-standard 50% of list, so :data:`~offpeak.prices.BATCH_DISCOUNT` covers it with
+standard 50% of list, so :data:`~firming.prices.BATCH_DISCOUNT` covers it with
 no special case.
 """
 
@@ -138,7 +138,7 @@ class MistralBatch(Venue):
                     from mistralai import Mistral
             except ImportError as exc:  # pragma: no cover
                 raise ImportError(
-                    'Mistral venue requires the mistralai SDK: pip install "offpeak[mistral]"'
+                    'Mistral venue requires the mistralai SDK: pip install "firming[mistral]"'
                 ) from exc
             self._client = Mistral()
         return self._client
@@ -158,7 +158,7 @@ class MistralBatch(Venue):
         model = models.pop()
 
         upload = self.client.files.upload(
-            file={"file_name": "offpeak_batch.jsonl", "content": build_jsonl(jobs)},
+            file={"file_name": "firming_batch.jsonl", "content": build_jsonl(jobs)},
             purpose="batch",
         )
         job = self.client.batch.jobs.create(

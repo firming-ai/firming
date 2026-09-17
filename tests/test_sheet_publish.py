@@ -9,8 +9,8 @@ import json
 
 import pytest
 
-import offpeak
-from offpeak import prices
+import firming
+from firming import prices
 
 
 def sheet(**over):
@@ -131,7 +131,7 @@ def test_plain_http_is_refused():
 
 def test_unknown_schema_is_refused():
     with pytest.raises(ValueError, match="unsupported price-sheet schema"):
-        prices.load_sheet(sheet(schema="offpeak.price-sheet/2"))
+        prices.load_sheet(sheet(schema="firming.price-sheet/2"))
 
 
 def test_missing_schema_is_refused():
@@ -182,15 +182,15 @@ def test_a_refused_sheet_leaves_the_table_untouched():
 def test_a_settlement_prints_the_loaded_sheet_date_not_the_bundled_one():
     """client.py did `from .prices import PRICE_SHEET_DATE` — a bound copy."""
     prices.load_sheet(sheet())
-    rendered = str(offpeak.receipt([]))
+    rendered = str(firming.receipt([]))
     assert "2099-01-01" in rendered
     assert prices.PRICE_SHEET_DATE not in rendered
 
 
 def test_a_quote_prints_the_loaded_sheet_date_not_the_bundled_one():
     prices.load_sheet(sheet())
-    jobs = [offpeak.job("claude-haiku-4-5", "hi", max_tokens=10)]
-    assert "2099-01-01" in str(offpeak.quote(jobs, "6h"))
+    jobs = [firming.job("claude-haiku-4-5", "hi", max_tokens=10)]
+    assert "2099-01-01" in str(firming.quote(jobs, "6h"))
 
 
 def test_bundled_constant_never_moves():
@@ -215,7 +215,7 @@ def test_export_carries_lanes_without_moving_the_schema():
     # Additive: every key an older reader knows keeps its shape and the major
     # does not move, so a sheet published by this build still loads there.
     doc = prices.export_sheet()
-    assert doc["schema"] == "offpeak.price-sheet/1"
+    assert doc["schema"] == "firming.price-sheet/1"
     assert set(doc) >= {
         "schema",
         "sheet_date",

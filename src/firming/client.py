@@ -36,8 +36,8 @@ def default_venues() -> list[Venue]:
     extra, and a model name should not start costing money at a venue nobody
     asked for. Pass them explicitly::
 
-        from offpeak.venues import DeepSeekClock, QwenBatch
-        offpeak.run(jobs, "06:00", venues=[DeepSeekClock(), QwenBatch()])
+        from firming.venues import DeepSeekClock, QwenBatch
+        firming.run(jobs, "06:00", venues=[DeepSeekClock(), QwenBatch()])
     """
     from .venues.anthropic_batch import AnthropicBatch
     from .venues.openai_batch import OpenAIBatch
@@ -120,7 +120,7 @@ class Settlement:
     def __str__(self) -> str:
         venues = " · ".join(f"{k} {v}" for k, v in sorted(self.by_venue.items()))
         lines = [
-            "OFFPEAK SETTLEMENT " + "─" * 28,
+            "FIRMING SETTLEMENT " + "─" * 28,
             f"jobs      {self.total} ({self.ok} ok, {self.fell_back} sync fallback, "
             f"{self.failed} failed)",
             f"sla       {self.sla_met}/{self.total} met",
@@ -129,7 +129,7 @@ class Settlement:
             f"list      ${_usd(self.list_usd)}",
             f"paid      ${_usd(self.paid_usd)}",
             f"captured  ${_usd(self.captured_usd)} ({self.captured_pct:.1f}%)",
-            f"prices    snapshot {_prices.sheet_date()} — override via offpeak.prices",
+            f"prices    snapshot {_prices.sheet_date()} — override via firming.prices",
         ]
         if self.fell_back:
             lines.append(

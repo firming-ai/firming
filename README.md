@@ -39,52 +39,52 @@ Firm prices need a market read behind them. **FILL** is Firming's index: the fil
 
 ## Status
 
-The sidecar, the rate feed and the `firming` package are in build. The PyPI name [`firming`](https://pypi.org/project/firming/) is reserved (0.0.1 placeholder) and ships with the first sidecar release. Phase one covers OpenAI and Gemini.
+The sidecar and the rate feed are in build; they ship in the [`firming`](https://pypi.org/project/firming/) package alongside the batch client. Phase one covers OpenAI and Gemini.
 
 What is in this repository today:
 
-- **`src/`** — the batch client, published on PyPI as [`offpeak`](https://pypi.org/project/offpeak/) (0.3.0). It is the first ladder Firming built: place a job on the venue's batch lane at 50% off list, and rescue it at the standard lane before the deadline if the batch is at risk. It stays supported and is documented below.
+- **`src/`** — the batch client, `pip install firming` (0.4.0; renamed from `offpeak`, whose last release is 0.3.0 — same API, new import). It is the first ladder Firming built: place a job on the venue's batch lane at 50% off list, and rescue it at the standard lane before the deadline if the batch is at risk. It stays supported and is documented below.
 - **`web/`** — the site and the remote MCP connector.
 - **`board-data`** — the daily Spread Board, the price-sheet watch and the FILL output, written by workflows only.
 - **[SPEC.md](SPEC.md)** — the deadline and receipt semantics the batch client implements.
 
 ## The batch client
 
-[![PyPI](https://img.shields.io/pypi/v/offpeak)](https://pypi.org/project/offpeak/)
+[![PyPI](https://img.shields.io/pypi/v/firming)](https://pypi.org/project/firming/)
 
 ```bash
-pip install "offpeak[all]"        # OpenAI + Anthropic venues
-pip install "offpeak[anthropic]"  # or one provider
-pip install "offpeak[openai]"
+pip install "firming[all]"        # OpenAI + Anthropic venues
+pip install "firming[anthropic]"  # or one provider
+pip install "firming[openai]"
 ```
 
 ```python
-import offpeak
+import firming
 
-jobs = [offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{doc}") for doc in docs]
+jobs = [firming.job("claude-haiku-4-5", f"Summarize:\n\n{doc}") for doc in docs]
 
-print(offpeak.quote(jobs, deadline="06:00"))   # list vs batch, per venue, before any call
-results = offpeak.run(jobs, deadline="06:00")  # batch lane, rescued at list if at risk
-print(offpeak.receipt(results))                # list cost, paid cost, captured spread
+print(firming.quote(jobs, deadline="06:00"))   # list vs batch, per venue, before any call
+results = firming.run(jobs, deadline="06:00")  # batch lane, rescued at list if at risk
+print(firming.receipt(results))                # list cost, paid cost, captured spread
 ```
 
 - **Know the price before you spend it.** `quote(jobs, deadline=...)` prices a run against the published sheets with no API calls and no key. Token counts come from the job where it knows them; otherwise the figure is a labeled estimate, and a quote with no output signal is marked a **floor**. Pass `assumed_output_ratio=` or `metadata={"expected_output_tokens": ...}` for a priced estimate.
 - **One argument, not a workflow.** `run(jobs, deadline=...)` handles batching, submission, polling, collection and result matching across providers. Results come back in input order, each with a per-job `Receipt`.
 - **The deadline is guarded, not hoped for.** When the remaining window reaches the **risk buffer** (default 15% of the window, clamped to 1–10 minutes), unfinished jobs are cancelled and re-run on the standard lane at list. Set `fallback="none"` to report them instead. Deadlines take `"06:00"`, `"4h"`, ISO 8601, `datetime` or `timedelta` — the full semantics are in [SPEC.md](SPEC.md).
-- **Every run settles a receipt.** List cost, paid cost, captured spread — arithmetic against public price sheets, not estimates. Unknown models settle with `cost = None` rather than a guess; register your own with `offpeak.prices.register_price("my-fine-tune", input_per_m=4.0, output_per_m=16.0)`.
+- **Every run settles a receipt.** List cost, paid cost, captured spread — arithmetic against public price sheets, not estimates. Unknown models settle with `cost = None` rather than a guess; register your own with `firming.prices.register_price("my-fine-tune", input_per_m=4.0, output_per_m=16.0)`.
 - **Your keys, your perimeter.** The client talks directly to the providers with your own API keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or a configured client such as `OpenAIBatch(client=my_client)`). No proxy, no third party in the data path.
 - **Zero-dependency core.** Provider SDKs load only via extras.
 
 **When the process can't wait.** `run()` blocks for as long as the batch takes — right for a Temporal activity or an Airflow task, wrong for a laptop that sleeps, a CI step with a timeout, or a serverless function. Keep the run's state as a value instead:
 
 ```python
-ticket = offpeak.submit(jobs, deadline="06:00")   # returns immediately
+ticket = firming.submit(jobs, deadline="06:00")   # returns immediately
 ticket.save("run.json")                            # disk, a DB row, S3 — anywhere
 
 # later, in another process
-ticket = offpeak.Ticket.load("run.json")
-results = offpeak.collect(ticket)                  # same deadline, same fallback
-print(offpeak.receipt(results))
+ticket = firming.Ticket.load("run.json")
+results = firming.collect(ticket)                  # same deadline, same fallback
+print(firming.receipt(results))
 ```
 
 `collect(ticket, wait=False)` is one non-blocking sweep; `status(ticket)` peeks. `run()` is exactly `collect(submit(...))`. The ticket carries handles, never keys.
@@ -100,9 +100,9 @@ print(offpeak.receipt(results))
 | `deepseek:clock` | `deepseek-*` | `deepseek` | `DEEPSEEK_API_KEY` | **clock** — no batch API; priced by the hour, held until the cheap window |
 
 ```python
-from offpeak.venues import DeepSeekClock, QwenBatch
+from firming.venues import DeepSeekClock, QwenBatch
 
-results = offpeak.run(jobs, deadline="06:00", venues=[DeepSeekClock(), QwenBatch(region="intl")])
+results = firming.run(jobs, deadline="06:00", venues=[DeepSeekClock(), QwenBatch(region="intl")])
 ```
 
 DeepSeek is the one venue that prices by the clock rather than by lane: weekday peak is 01:00–04:00 and 06:00–10:00 UTC, everything else is half the peak rate, and the driver holds a job until the rate is cheap rather than uploading it anywhere. Neither DeepSeek nor Qwen has a live receipt yet.
@@ -110,10 +110,10 @@ DeepSeek is the one venue that prices by the clock rather than by lane: weekday 
 **Quote from the CLI.**
 
 ```bash
-python -m offpeak quote --model gpt-5.6-luna --input-tokens 800 --output-tokens 200 --jobs 5000
+python -m firming quote --model gpt-5.6-luna --input-tokens 800 --output-tokens 200 --jobs 5000
 ```
 
-Prices are a bundled snapshot of public list sheets; providers change them, so verify and override at runtime via `offpeak.prices`. The sheet also carries what venues charge for *urgency* — `get_fast_price()`, `urgency_spread()` — and flags promotional list prices with the date and price they decay to.
+Prices are a bundled snapshot of public list sheets; providers change them, so verify and override at runtime via `firming.prices`. The sheet also carries what venues charge for *urgency* — `get_fast_price()`, `urgency_spread()` — and flags promotional list prices with the date and price they decay to.
 
 ## Contributing
 

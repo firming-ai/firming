@@ -1,7 +1,7 @@
 """OpenAI Batch API venue (50% off list, 24h completion window).
 
 Uses your own ``OPENAI_API_KEY``. Requires the ``openai`` extra:
-``pip install "offpeak[openai]"``.
+``pip install "firming[openai]"``.
 """
 
 from __future__ import annotations
@@ -92,7 +92,7 @@ class OpenAIBatch(Venue):
                 from openai import OpenAI
             except ImportError as exc:  # pragma: no cover
                 raise ImportError(
-                    'OpenAI venue requires the openai SDK: pip install "offpeak[openai]"'
+                    'OpenAI venue requires the openai SDK: pip install "firming[openai]"'
                 ) from exc
             self._client = OpenAI()
         return self._client
@@ -102,7 +102,7 @@ class OpenAIBatch(Venue):
 
     def submit(self, jobs: list[Job]) -> str:
         upload = self.client.files.create(
-            file=("offpeak_batch.jsonl", build_jsonl(jobs)), purpose="batch"
+            file=("firming_batch.jsonl", build_jsonl(jobs)), purpose="batch"
         )
         batch = self.client.batches.create(
             input_file_id=upload.id, endpoint=_ENDPOINT, completion_window="24h"

@@ -8,13 +8,13 @@ provider, you are billed for results nobody collects.
 
 The fix is to make the in-flight state a value you can keep::
 
-    ticket = offpeak.submit(jobs, deadline="06:00")
+    ticket = firming.submit(jobs, deadline="06:00")
     ticket.save("tonight.json")            # anywhere: disk, a DB row, S3
 
     # …later, in a different process — a cron at 06:00, a second CI job…
-    ticket = offpeak.Ticket.load("tonight.json")
-    results = offpeak.collect(ticket)      # same deadline, same fallback
-    print(offpeak.receipt(results))
+    ticket = firming.Ticket.load("tonight.json")
+    results = firming.collect(ticket)      # same deadline, same fallback
+    print(firming.receipt(results))
 
 ``collect(ticket, wait=False)`` is a single non-blocking sweep: it returns the
 results if everything has landed (or the deadline forced a settlement), and
@@ -203,7 +203,7 @@ class Ticket:
         when = f"{left / 3600:.1f}h left" if left > 0 else f"{-left / 60:.0f}m past"
         venues = " · ".join(f"{k} {v}" for k, v in sorted(self.batches.items())) or "—"
         return (
-            f"OFFPEAK TICKET {state} · {len(self.jobs)} job(s) · "
+            f"FIRMING TICKET {state} · {len(self.jobs)} job(s) · "
             f"{len(self.collected)} collected · deadline {self.deadline:%Y-%m-%d %H:%M %Z} "
             f"({when}) · batches {venues}"
         )

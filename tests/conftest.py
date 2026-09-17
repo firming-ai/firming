@@ -13,7 +13,7 @@ rates under a downloaded sheet's date.
 
 import pytest
 
-from offpeak import prices
+from firming import prices
 
 
 @pytest.fixture(autouse=True)

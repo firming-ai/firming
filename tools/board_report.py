@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offpeak Spread Board generator — quotes at the open, marks at the close.
+"""Firming Spread Board generator — quotes at the open, marks at the close.
 
 Open data, zero venue spend. GB legs: NESO carbon intensity (forecast at the
 open, actual at the close) and Octopus Agile day-ahead power, both keyless. US legs: CAISO
@@ -46,7 +46,7 @@ AGILE = (
     "?period_from={f}&period_to={t}&page_size=1500"
 )
 
-# Published token spreads. Kept in sync with offpeak.prices by
+# Published token spreads. Kept in sync with firming.prices by
 # test_board_report.py rather than by hand: the Action runs this script without
 # installing the SDK, so these are duplicated on purpose, not importable.
 BATCH_DISCOUNT = 0.5
@@ -73,13 +73,13 @@ PROMO_CAVEAT = (
 NIGHT_START_HOUR_UTC = 16  # 17:00 BST — the evening peak opens
 NIGHT_HOURS = 15  # ...through 07:00Z
 PEAK_WINDOW_UTC = (16, 20)  # 17-21 BST
-OFFPEAK_WINDOW_UTC = (23, 4)  # 00-05 BST, wraps midnight
+OFF_PEAK_WINDOW_UTC = (23, 4)  # 00-05 BST, wraps midnight
 
 # US zones price in their own clock, so their windows are local hours rather
 # than UTC ones: the evening peak of the session's date, and the trough of
 # the morning after — the same shape as the GB legs, read off a different clock.
 PEAK_WINDOW_LOCAL = (17, 21)
-OFFPEAK_WINDOW_LOCAL = (0, 5)
+OFF_PEAK_WINDOW_LOCAL = (0, 5)
 
 # (label, gridstatus call) — day-ahead hourly, keyless, no account required.
 US_ZONES = {
@@ -250,27 +250,27 @@ def _us_rows(zone: str, night: dt.date) -> list[tuple[dt.datetime, float]]:
 def us_leg(
     rows: list[tuple[dt.datetime, float]], night: dt.date, unit: str = "$/MWh"
 ) -> dict | None:
-    """Peak/offpeak windows for a US zone, in that zone's local clock."""
+    """Peak/off-peak windows for a US zone, in that zone's local clock."""
     following = night + dt.timedelta(days=1)
     peak = [
         v for ts, v in rows
         if ts.date() == night and PEAK_WINDOW_LOCAL[0] <= ts.hour < PEAK_WINDOW_LOCAL[1]
     ]
-    offpeak = [
+    off_peak = [
         v for ts, v in rows
         if ts.date() == following
-        and OFFPEAK_WINDOW_LOCAL[0] <= ts.hour < OFFPEAK_WINDOW_LOCAL[1]
+        and OFF_PEAK_WINDOW_LOCAL[0] <= ts.hour < OFF_PEAK_WINDOW_LOCAL[1]
     ]
-    if not peak and not offpeak:
+    if not peak and not off_peak:
         return None
     peak_mean = round(statistics.mean(peak), 2) if peak else None
-    offpeak_mean = round(statistics.mean(offpeak), 2) if offpeak else None
+    off_peak_mean = round(statistics.mean(off_peak), 2) if off_peak else None
     return {
         "n_hours": len(rows),
         "peak_window_17_21_local": peak_mean,
-        "offpeak_window_00_05_local": offpeak_mean,
+        "offpeak_window_00_05_local": off_peak_mean,
         "window_spread": (
-            round(peak_mean / offpeak_mean, 2) if peak_mean and offpeak_mean else None
+            round(peak_mean / off_peak_mean, 2) if peak_mean and off_peak_mean else None
         ),
         "unit": unit,
     }
@@ -420,12 +420,12 @@ def window(series: list[tuple[str, float]], h0: int, h1: int) -> float | None:
 def _leg(series, unit_extras=None) -> dict:
     """The shared shape of a board leg: both windows, their spread, coverage."""
     peak = window(series, *PEAK_WINDOW_UTC)
-    offpeak = window(series, *OFFPEAK_WINDOW_UTC)
+    off_peak = window(series, *OFF_PEAK_WINDOW_UTC)
     leg = {
         "n_halfhours": len(series),
         "peak_window_17_21_bst": peak,
-        "offpeak_window_00_05_bst": offpeak,
-        "window_spread": round(peak / offpeak, 2) if peak and offpeak else None,
+        "offpeak_window_00_05_bst": off_peak,
+        "window_spread": round(peak / off_peak, 2) if peak and off_peak else None,
     }
     if unit_extras:
         leg.update(unit_extras)
@@ -494,7 +494,7 @@ def build_record(
 
 
 BOARD_HEADER = (
-    "# Offpeak Spread Board — marked sessions\n\n"
+    "# Firming Spread Board — marked sessions\n\n"
     "Quotes are open-data observation, not trade advice; settlements (real runs)\n"
     "live elsewhere. Generated daily by `tools/board_report.py`.\n\n"
     "Token spreads are published rather than observed: batch tiers are 50% off "

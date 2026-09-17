@@ -1,4 +1,4 @@
-# offpeak-site
+# firming-site
 
 One static page. Five surfaces behind hash routes: `#/` desk · `#/calculator` savings ·
 `#/board` spread board (with the carbon leg) · `#/prices` prices, marks and queue ·
@@ -29,10 +29,10 @@ Pages, S3, Netlify. Hash routing means no server rewrites are needed.
 
 ## Custom domain
 
-The site lives at **https://off-peak.ai** (bought through Vercel Domains 2026-09-06,
-so DNS is Vercel's; `www.off-peak.ai` 308-redirects to the apex). `offpeak-ai.vercel.app`
-still serves the same deployment as a fallback. If `offpeak.ai` is ever acquired, add it
-to the same project and make it the primary; `off-peak.ai` then becomes the redirect.
+The site lives at **https://firming.ai** (Vercel Domains, so DNS is Vercel's). The
+previous domain, `off-peak.ai` (bought 2026-09-06, `www` 308s to its apex), is on the
+same project and becomes a 308 to firming.ai. `offpeak-ai.vercel.app` still serves the
+same deployment as a fallback.
 The docs site (`firming-ai.github.io/firming`) stays where it is and is linked from the
 nav and the footer.
 
@@ -42,7 +42,7 @@ Nothing on the page is invented. Editing any of these means editing the source d
 
 | Figure | Source |
 |---|---|
-| Token prices | `offpeak.prices`, sheet snapshot 2026-08-30 (`PRICES` in the inline script; `SHEET_DATE` stamps every citation). A newer `sheet/latest.json` on board-data replaces it on load |
+| Token prices | `firming.prices`, sheet snapshot 2026-08-30 (`PRICES` in the inline script; `SHEET_DATE` stamps every citation). A newer `sheet/latest.json` on board-data replaces it on load |
 | Lane per row | `l: "clock"` on the DeepSeek rows mirrors `prices.lane_for()`; every place the page prints "batch" beside a row reads it and says "off-peak" instead |
 | Batch discount | 50% of standard, published on every batch venue; DeepSeek's off-peak clock rate is the same half of peak |
 | Fast → batch 4x | `urgency_spread()` on the gpt-5.6-sol sheet ($8/$40 vs $2/$10) |

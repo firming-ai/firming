@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from offpeak import Job, Receipt, Result, prices
+from firming import Job, Receipt, Result, prices
 
 _spec = importlib.util.spec_from_file_location(
     "sheet_watch", Path(__file__).resolve().parent.parent / "tools" / "sheet_watch.py"
@@ -395,7 +395,7 @@ def test_main_publishes_rows_even_when_the_classifier_dies(tmp_path, monkeypatch
     def boom(jobs, deadline):
         raise RuntimeError("venue exploded")
 
-    monkeypatch.setattr(sw.offpeak, "run", boom)
+    monkeypatch.setattr(sw.firming, "run", boom)
 
     assert sw.main(["--outdir", str(tmp_path)]) == 0
 

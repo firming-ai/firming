@@ -1,14 +1,14 @@
 """Qwen venue — network-free. There is no live receipt yet; see the module
-warning in ``offpeak.venues.qwen_batch``."""
+warning in ``firming.venues.qwen_batch``."""
 
 import json
 
 import pytest
 
-import offpeak
-from offpeak import job
-from offpeak.venues.base import BatchState
-from offpeak.venues.qwen_batch import (
+import firming
+from firming import job
+from firming.venues.base import BatchState
+from firming.venues.qwen_batch import (
     MAX_WINDOW_HOURS,
     MIN_WINDOW_HOURS,
     REGIONS,
@@ -137,7 +137,7 @@ class TestRouting:
         assert not QwenBatch(client=object()).supports(model)
 
     def test_is_not_in_default_venues(self):
-        assert "qwen:batch" not in {v.name for v in offpeak.default_venues()}
+        assert "qwen:batch" not in {v.name for v in firming.default_venues()}
 
 
 class TestSubmit:
@@ -200,32 +200,32 @@ class TestSubmit:
 
 class TestPricing:
     def test_the_flagship_rows_are_on_the_sheet(self):
-        assert offpeak.prices.get_price("qwen3.7-max") == (2.50, 7.50)
-        assert offpeak.prices.get_price("qwen3.8-max") == (2.00, 6.00)
+        assert firming.prices.get_price("qwen3.7-max") == (2.50, 7.50)
+        assert firming.prices.get_price("qwen3.8-max") == (2.00, 6.00)
         # A date-pinned id inherits its family row.
-        assert offpeak.prices.get_price("qwen3.7-max-2026-05-20") == (2.50, 7.50)
+        assert firming.prices.get_price("qwen3.7-max-2026-05-20") == (2.50, 7.50)
 
     def test_the_batch_tier_is_the_standard_fifty_percent_rule(self):
         for model in ("qwen3.7-max", "qwen3.8-max"):
-            listed = offpeak.prices.list_cost_usd(model, 1_000_000, 1_000_000)
-            batched = offpeak.prices.batch_cost_usd(model, 1_000_000, 1_000_000)
+            listed = firming.prices.list_cost_usd(model, 1_000_000, 1_000_000)
+            batched = firming.prices.batch_cost_usd(model, 1_000_000, 1_000_000)
             assert batched == pytest.approx(listed * 0.5)
 
     def test_the_tiered_families_are_unpriced_rather_than_guessed(self):
         # plus/flash price by context tier and thinking mode; the sheet has
         # neither dimension, so a single number would be wrong.
-        assert offpeak.prices.get_price("qwen-plus") is None
-        assert offpeak.prices.get_price("qwen3.7-plus") is None
+        assert firming.prices.get_price("qwen-plus") is None
+        assert firming.prices.get_price("qwen3.7-plus") is None
 
     def test_no_promo_note_without_a_date(self):
         # "Limited-time 50% off" with no end date is not a PromoNote.
-        assert offpeak.prices.get_promo_note("qwen3.7-max") is None
+        assert firming.prices.get_promo_note("qwen3.7-max") is None
 
     def test_the_lane_is_a_batch(self):
-        assert offpeak.prices.lane_for("qwen3.7-max") == "batch"
+        assert firming.prices.lane_for("qwen3.7-max") == "batch"
 
     def test_a_priced_quote_captures_a_real_spread(self):
-        q = offpeak.quote(
+        q = firming.quote(
             [job("qwen3.7-max", "hi", max_tokens=256)],
             "48h",
             venues=[QwenBatch(client=object())],

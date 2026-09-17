@@ -35,7 +35,7 @@ In JSON, a resolved deadline is carried as an ISO 8601 string with offset:
 Over HTTP (for gateways and proxies), the request header:
 
 ```
-Offpeak-Deadline: 2026-08-21T06:00:00-07:00
+Firming-Deadline: 2026-08-21T06:00:00-07:00
 ```
 
 A gateway that receives the header and cannot honor it MUST ignore it and serve the request at standard urgency, never fail it.

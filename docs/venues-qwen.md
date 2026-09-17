@@ -17,7 +17,7 @@ does not have — a region, and a completion window you choose.
 ## Install and configure
 
 ```bash
-pip install "offpeak[qwen]"        # an alias of the openai extra
+pip install "firming[qwen]"        # an alias of the openai extra
 export DASHSCOPE_API_KEY=sk-...    # or ALIBABA_API_KEY; both names are in use
 ```
 
@@ -27,11 +27,11 @@ letting the `openai` SDK fall back to `OPENAI_API_KEY`.
 It is **opt-in** — not in `default_venues()`.
 
 ```python
-import offpeak
-from offpeak.venues import QwenBatch
+import firming
+from firming.venues import QwenBatch
 
-jobs = [offpeak.job("qwen3.7-max", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
-results = offpeak.run(
+jobs = [firming.job("qwen3.7-max", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
+results = firming.run(
     jobs, deadline="2d", venues=[QwenBatch(region="intl", completion_window="48h")]
 )
 ```

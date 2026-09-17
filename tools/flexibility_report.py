@@ -30,10 +30,10 @@ reprinted in the report. A number whose provenance is not on the page is not
 evidence.
 
 **No estimates in the dollar layer.** Every dollar traces to a row in
-``offpeak.prices`` with the sheet date attached; a model that is not on the
+``firming.prices`` with the sheet date attached; a model that is not on the
 sheet renders as an em dash and is counted as unpriced, never as free. Token
 counts *may* be inferred, and where they are the row is marked ``EST`` inline —
-the same way :func:`offpeak.quote` marks them — so a reader can see exactly
+the same way :func:`firming.quote` marks them — so a reader can see exactly
 which dollars inherit an assumption.
 
 **No carbon.** Not in v0, not partially, not as a placeholder column. The grid
@@ -53,8 +53,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from offpeak import prices  # noqa: E402
-from offpeak.prices import format_usd  # noqa: E402
+from firming import prices  # noqa: E402
+from firming.prices import format_usd  # noqa: E402
 
 # --------------------------------------------------------------------------
 # What each venue actually sells, which is not one thing
@@ -168,7 +168,7 @@ _TIER_ALIASES: dict[str, str] = {
     "on-demand": "standard", "ondemand": "standard", "sync": "standard",
     "default": "standard", "interactive": "standard", "realtime": "standard",
     "batch": "batch", "batch_api": "batch", "batched": "batch",
-    "flex": "batch", "offpeak": "batch", "off_peak": "batch",
+    "flex": "batch", "firming": "batch", "off_peak": "batch",
     "off-peak": "batch", "discount": "batch", "scale": "batch",
     "fast": "fast", "priority": "fast", "express": "fast",
 }
@@ -211,7 +211,7 @@ class Caveat:
 
 
 # Only what the sheet cannot supply. Gemini's Flash decay used to be restated
-# here and is now a PromoNote in offpeak.prices, which is where it belongs: read
+# here and is now a PromoNote in firming.prices, which is where it belongs: read
 # from the sheet, it disappears from the report the day the price stops being
 # promotional, instead of outliving it in a hardcoded tuple.
 DECAY_CAVEATS: tuple[Caveat, ...] = (
@@ -228,7 +228,7 @@ DECAY_CAVEATS: tuple[Caveat, ...] = (
 def promo_caveats() -> list[Caveat]:
     """Decay notes, with the sheet's own PromoNotes folded in.
 
-    Read from :data:`offpeak.prices.PROMO_NOTES` rather than restated, so a
+    Read from :data:`firming.prices.PROMO_NOTES` rather than restated, so a
     price that stops being promotional stops being caveated here too.
     """
     out = []
@@ -710,7 +710,7 @@ def render(analysis: Analysis) -> str:
     out.append("# Deadline flexibility report — v0\n\n")
     out.append(
         f"Generated {analysis.generated_utc} by `tools/flexibility_report.py` "
-        f"against the `offpeak` price sheet dated **{prices.PRICE_SHEET_DATE}**. "
+        f"against the `firming` price sheet dated **{prices.PRICE_SHEET_DATE}**. "
         "Every dollar below traces to a row on that sheet; a model that is not "
         "on it renders as an em dash and is counted as unpriced, never as free.\n\n"
     )
@@ -756,7 +756,7 @@ def _render_headline(a: Analysis) -> str:
             "excluded from every total above and counted here, rather than "
             "silently valued at zero: a price nobody published is not a price of "
             "nothing, and a fleet is not smaller because this sheet is missing a "
-            "row. Register a rate with `offpeak.prices.register_price()` and "
+            "row. Register a rate with `firming.prices.register_price()` and "
             "re-run to fold them in. **Every total in this report is therefore a "
             "floor.**\n\n"
         )
@@ -881,7 +881,7 @@ def _render_wait_value(a: Analysis) -> str:
 def _render_arithmetic(a: Analysis) -> str:
     lines = [
         "## The arithmetic\n\n",
-        f"Rates are USD per 1M tokens from the `offpeak` sheet dated "
+        f"Rates are USD per 1M tokens from the `firming` sheet dated "
         f"**{prices.PRICE_SHEET_DATE}**, one line per log row so every total "
         "above can be re-derived by hand.\n\n",
         "| job class | model | venue · tier | in x rate | out x rate "

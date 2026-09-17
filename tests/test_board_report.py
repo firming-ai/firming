@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from offpeak.prices import BATCH_DISCOUNT as SDK_BATCH_DISCOUNT
-from offpeak.prices import urgency_spread
+from firming.prices import BATCH_DISCOUNT as SDK_BATCH_DISCOUNT
+from firming.prices import urgency_spread
 
 _spec = importlib.util.spec_from_file_location(
     "board_report", Path(__file__).resolve().parent.parent / "tools" / "board_report.py"
@@ -27,7 +27,7 @@ def series(*pairs):
 
 
 def test_board_discount_tracks_the_sdk_price_sheet():
-    # The board prints a token spread; it must not drift from what offpeak bills.
+    # The board prints a token spread; it must not drift from what firming bills.
     assert br.BATCH_DISCOUNT == SDK_BATCH_DISCOUNT
 
 
@@ -50,7 +50,7 @@ class TestNightSpan:
         span_hours = int((t - f).total_seconds() // 3600)
         hours = {(f + dt.timedelta(hours=i)).hour for i in range(span_hours)}
         assert hours & set(range(*br.PEAK_WINDOW_UTC))
-        assert hours & ({23} | set(range(0, br.OFFPEAK_WINDOW_UTC[1])))
+        assert hours & ({23} | set(range(0, br.OFF_PEAK_WINDOW_UTC[1])))
 
     def test_mark_at_dawn_looks_back_at_the_finished_night(self):
         f, t = br.night_span(utc(2026, 8, 21, 6, 30), "mark")
@@ -156,7 +156,7 @@ class TestBuildRecord:
         assert json.loads(json.dumps(rec))["night_of"] == "2026-08-20"
 
     def test_spread_is_none_rather_than_dividing_by_a_missing_window(self):
-        rec = self._rec(power_series=series((17, 0, 30.0)))  # peak only, no offpeak
+        rec = self._rec(power_series=series((17, 0, 30.0)))  # peak only, no off-peak
         assert rec["power_gb_agile"]["window_spread"] is None
 
     def test_token_spread_is_derived_from_the_discount(self):
@@ -192,7 +192,7 @@ class TestBoard:
         n = br.rebuild_board(tmp_path / "BOARD.md", tmp_path)
         text = (tmp_path / "BOARD.md").read_text()
         assert n == 2
-        assert text.startswith("# Offpeak Spread Board")
+        assert text.startswith("# Firming Spread Board")
         assert text.count("| 2026-08-19 |") == 1
         assert text.rstrip().endswith("2.0x |")
 
@@ -268,13 +268,13 @@ def _split(board):
 
 
 class TestUsZones:
-    def _rows(self, night, peak_vals, offpeak_vals, tz_hours=-7):
+    def _rows(self, night, peak_vals, off_peak_vals, tz_hours=-7):
         tz = dt.timezone(dt.timedelta(hours=tz_hours))
         rows = []
         for i, v in enumerate(peak_vals):  # evening of the night's own date
             rows.append((dt.datetime(night.year, night.month, night.day, 17 + i, tzinfo=tz), v))
         nxt = night + dt.timedelta(days=1)
-        for i, v in enumerate(offpeak_vals):  # small hours of the morning after
+        for i, v in enumerate(off_peak_vals):  # small hours of the morning after
             rows.append((dt.datetime(nxt.year, nxt.month, nxt.day, i, tzinfo=tz), v))
         return rows
 
@@ -285,7 +285,7 @@ class TestUsZones:
         assert leg["offpeak_window_00_05_local"] == 25.0
         assert leg["window_spread"] == 4.4
 
-    def test_offpeak_is_the_morning_after_not_the_same_morning(self):
+    def test_off_peak_is_the_morning_after_not_the_same_morning(self):
         # The whole point of the board: the evening peak against the trough
         # that follows it, not the one twelve hours before it.
         night = dt.date(2026, 8, 20)
@@ -372,12 +372,12 @@ class TestHourIntensity:
 
 
 class TestUsCarbonLeg:
-    def _mix(self, night, peak_ng, offpeak_ng):
+    def _mix(self, night, peak_ng, off_peak_ng):
         nxt = night + dt.timedelta(days=1)
         mix = {}
         for i, ng in enumerate(peak_ng):
             mix[(night, 17 + i)] = {"NG": ng, "WND": 1000.0 - ng}
-        for i, ng in enumerate(offpeak_ng):
+        for i, ng in enumerate(off_peak_ng):
             mix[(nxt, i)] = {"NG": ng, "WND": 1000.0 - ng}
         return mix
 
@@ -475,7 +475,7 @@ class TestBoardHeaderHealing:
         # either, because the columns then lie about what they hold.
         board = tmp_path / "BOARD.md"
         board.write_text(
-            "# Offpeak night board — marked nights\n\n"
+            "# Firming night board — marked nights\n\n"
             "| night | old | columns |\n|---|---|---|\n"
             "| 2026-08-19 | a | b |\n"
         )

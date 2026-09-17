@@ -2,12 +2,12 @@
 
 import pytest
 
-import offpeak
-from offpeak import __main__ as cli
-from offpeak import job
-from offpeak.job import Job
-from offpeak.prices import BATCH_DISCOUNT, format_usd
-from offpeak.quote import BATCH_COMPLETION_WINDOW_S, estimate_tokens, quote
+import firming
+from firming import __main__ as cli
+from firming import job
+from firming.job import Job
+from firming.prices import BATCH_DISCOUNT, format_usd
+from firming.quote import BATCH_COMPLETION_WINDOW_S, estimate_tokens, quote
 
 
 def counted(model, input_tokens, output_tokens, n=1):
@@ -64,8 +64,8 @@ class TestQuoteArithmetic:
 class TestNoNetwork:
     def test_quote_makes_no_api_calls(self, monkeypatch):
         # Any venue touching .client would construct a real SDK client.
-        import offpeak.venues.anthropic_batch as ab
-        import offpeak.venues.openai_batch as ob
+        import firming.venues.anthropic_batch as ab
+        import firming.venues.openai_batch as ob
 
         def boom(self):
             raise AssertionError("quote() must not touch a provider client")
@@ -246,7 +246,7 @@ class TestCli:
                        "--output-tokens", "200", "--jobs", "5000"])
         out = capsys.readouterr().out
         assert rc == 0
-        assert "OFFPEAK QUOTE" in out
+        assert "FIRMING QUOTE" in out
         assert "5000 job(s)" in out
         assert "$2.00" in out and "$1.00" in out
 
@@ -277,4 +277,4 @@ class TestFormatUsdIsShared:
         assert format_usd(None) == "—"
 
     def test_exported_from_the_package_root(self):
-        assert offpeak.format_usd(0.0000119) == "0.0000119"
+        assert firming.format_usd(0.0000119) == "0.0000119"

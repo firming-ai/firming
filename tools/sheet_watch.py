@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Sheet watch — does the price sheet this repo ships still match the ones it cites?
 
-``offpeak``'s bundled sheet is a dated snapshot of numbers other people publish.
+``firming``'s bundled sheet is a dated snapshot of numbers other people publish.
 Providers move those numbers whenever they like and announce it nowhere this
 repo can subscribe to, so ``PRICE_SHEET_DATE`` drifts silently from the truth.
 This tool makes the drift loud.
 
-Every source it watches is one of the pages :mod:`offpeak.prices` actually cites
+Every source it watches is one of the pages :mod:`firming.prices` actually cites
 in a comment, plus the four venues the sheet does not price yet but is asked
 about most. It fetches each page, strips it to text, hashes it, and compares
 against the text committed on ``board-data``. A hash that moved appends a dated
@@ -38,7 +38,7 @@ Dogfood
 Which is where the second half comes in. Classifying a diff as *price change*,
 *copy change* or *noise* is exactly the kind of work this whole library exists
 to price: a small, unglamorous LLM job that nobody is waiting on, with a real
-deadline hours away. So the classifier runs **through** ``offpeak`` — same
+deadline hours away. So the classifier runs **through** ``firming`` — same
 ``job()``/``run()``/``receipt()`` path any user gets, batch tier, cheapest venue
 that supports the cheapest model on the sheet — and reports what it paid.
 
@@ -78,8 +78,8 @@ from urllib.request import Request, urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-import offpeak  # noqa: E402
-from offpeak import prices  # noqa: E402
+import firming  # noqa: E402
+from firming import prices  # noqa: E402
 
 __all__ = [
     "SOURCES",
@@ -101,13 +101,13 @@ class Source:
 
     name: str
     url: str
-    #: True when :mod:`offpeak.prices` cites this page for a row on the sheet.
+    #: True when :mod:`firming.prices` cites this page for a row on the sheet.
     #: A cited page that moves may invalidate a shipped number; an uncited one
     #: is being watched ahead of pricing it.
     cited: bool
 
 
-# The six cited sources are the ones named in comments in src/offpeak/prices.py.
+# The six cited sources are the ones named in comments in src/firming/prices.py.
 # The uncited ones are pages the sheet does not cite: some are venues it does
 # not price yet, and watching them before they are on the sheet is how the
 # sheet gets added to honestly, with a history of what the page said rather
@@ -161,7 +161,7 @@ LABELS = ("price change", "copy change", "noise")
 #: visibly distinguishable from one we are genuinely reading.
 _PRICE_FIGURE = re.compile(r"\$\s?\d")
 
-_USER_AGENT = "offpeak-sheet-watch/1.0 (+https://github.com/firming-ai/firming)"
+_USER_AGENT = "firming-sheet-watch/1.0 (+https://github.com/firming-ai/firming)"
 _WS = re.compile(r"[ \t\u00a0]+")
 _ROW_MARKER = "<!-- rows appended below by tools/sheet_watch.py -->"
 
@@ -494,7 +494,7 @@ def classify(
 
     try:
         jobs = [
-            offpeak.job(
+            firming.job(
                 model,
                 _prompt(change),
                 max_tokens=CLASSIFIER_MAX_TOKENS,
@@ -503,14 +503,14 @@ def classify(
             for change in targets
         ]
 
-        estimate = offpeak.quote(jobs, deadline=deadline)
+        estimate = firming.quote(jobs, deadline=deadline)
         if estimate.batch_usd > cap_usd:
             return bail(
                 f"quoted ${prices.format_usd(estimate.batch_usd)} over the "
                 f"${prices.format_usd(cap_usd)} cap"
             )
 
-        results = list((runner or offpeak.run)(jobs, deadline))
+        results = list((runner or firming.run)(jobs, deadline))
 
         for change, result in zip(targets, results, strict=False):
             change.model = model
@@ -526,7 +526,7 @@ def classify(
             else:
                 change.reason = "classifier reply did not name a label"
 
-        settlement = offpeak.receipt(results)
+        settlement = firming.receipt(results)
     except Exception as exc:  # noqa: BLE001 — the classifier is decoration
         return bail(f"{type(exc).__name__}: {exc}"[:200])
 
@@ -589,7 +589,7 @@ def render_watch_md(
     )
     header = f"""# WATCH — provider sheet drift
 
-`offpeak` ships a **dated snapshot** of numbers other people publish. This table
+`firming` ships a **dated snapshot** of numbers other people publish. This table
 is the record of those pages moving underneath it.
 
 Every row is a hash diff of one page's visible text against the reading
@@ -599,11 +599,11 @@ says *that* something moved; the diff says *what*.
 
 **No number here has edited the price sheet.** Detection and resolution are
 different jobs. A page can move for a dozen reasons that are not a price change,
-so `tools/sheet_watch.py` never writes to `src/offpeak/prices.py`: a human reads
+so `tools/sheet_watch.py` never writes to `src/firming/prices.py`: a human reads
 a row and settles what it meant.
 
 The `classification` column is produced by an LLM job submitted **through
-`offpeak` itself** — batch tier, cheapest model on the sheet whose key is
+`firming` itself** — batch tier, cheapest model on the sheet whose key is
 present, deadline before the 06:30Z mark — and is *advisory*. It is allowed to
 be absent: rows publish whether or not it ran, and `unclassified` in that column
 means the classifier did not answer, never that the page did not move.
@@ -658,7 +658,7 @@ def _write(
 
 
 def _deadline_arg(value: str) -> datetime:
-    parsed = offpeak.parse_deadline(value)
+    parsed = firming.parse_deadline(value)
     return parsed.astimezone(timezone.utc)
 
 

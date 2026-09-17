@@ -205,7 +205,7 @@ class Quote:
 
     def __str__(self) -> str:
         lines = [
-            "OFFPEAK QUOTE " + "─" * 33,
+            "FIRMING QUOTE " + "─" * 33,
             f"jobs      {self.jobs} across {len(self.by_venue)} venue(s)",
             f"deadline  {self.deadline:%Y-%m-%d %H:%M %Z} ({self.window_seconds / 3600:.1f}h out)",
             f"tokens    {self.input_tokens:,} in · {self.output_tokens:,} out",
@@ -279,7 +279,7 @@ def quote(
     and are marked the same way.
 
     Raises ``ValueError`` for a deadline in the past, a model no venue supports,
-    or a non-positive ratio — the same programming errors :func:`offpeak.run`
+    or a non-positive ratio — the same programming errors :func:`firming.run`
     reserves exceptions for.
     """
     if assumed_output_ratio is not None and assumed_output_ratio <= 0:

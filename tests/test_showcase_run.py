@@ -169,14 +169,14 @@ class TestCorrectedGate:
 
     def test_a_measured_ratio_below_the_assumed_one_prices_higher(self, tmp_path):
         jobs = self._jobs(tmp_path)
-        q = __import__("offpeak").quote(jobs, "12h")
+        q = __import__("firming").quote(jobs, "12h")
         corrected = sr.corrected_list_usd(jobs, q, 2.87)
         assert corrected > q.list_usd
 
     def test_the_assumed_ratio_reproduces_the_quote(self, tmp_path):
         # Correcting by the ratio the quote already uses must be a no-op.
         jobs = self._jobs(tmp_path)
-        q = __import__("offpeak").quote(jobs, "12h")
+        q = __import__("firming").quote(jobs, "12h")
         corrected = sr.corrected_list_usd(jobs, q, float(sr.CHARS_PER_TOKEN))
         assert corrected == pytest.approx(q.list_usd, rel=1e-6)
 
@@ -184,7 +184,7 @@ class TestCorrectedGate:
         # Output is already priced at the ceiling and does not depend on how the
         # input tokenises, so halving the ratio must not double the total.
         jobs = self._jobs(tmp_path)
-        q = __import__("offpeak").quote(jobs, "12h")
+        q = __import__("firming").quote(jobs, "12h")
         assert sr.corrected_list_usd(jobs, q, 2.0) < 2 * q.list_usd
 
     def test_the_gate_aborts_on_the_corrected_figure_not_the_quote(
@@ -195,7 +195,7 @@ class TestCorrectedGate:
         out = tmp_path / "run"
         _seed_cache(out / "books")
         jobs = sr.build_book(sr.parse_args(["--jobs", "40"]), out / "books")
-        q = __import__("offpeak").quote(jobs, "12h")
+        q = __import__("firming").quote(jobs, "12h")
         between = (q.list_usd + sr.corrected_list_usd(jobs, q, 2.87)) / 2
         rc = sr.main([
             "--out", str(out), "--jobs", "40", "--min-list", "0.001",

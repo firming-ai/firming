@@ -6,7 +6,7 @@ name: Price sheet
 # There is no database behind this and no service to keep up. It writes files:
 # `sheet/<date>.json` is immutable once published, `sheet/latest.json` is a copy
 # of the newest, and `sheet/index.json` lists them. The library never fetches any
-# of it on its own — offpeak.prices.load_sheet() is opt-in, and the default stays
+# of it on its own — firming.prices.load_sheet() is opt-in, and the default stays
 # the sheet the installed release shipped with, so runs stay offline-capable and
 # old receipts stay checkable against the numbers that settled them.
 #
@@ -17,7 +17,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "src/offpeak/prices.py"
+      - "src/firming/prices.py"
       - "tools/publish_sheet.py"
       - ".github/workflows/sheet.yml"
   workflow_dispatch:

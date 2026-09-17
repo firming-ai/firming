@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from offpeak import prices
+from firming import prices
 
 _spec = importlib.util.spec_from_file_location(
     "publish_sheet", Path(__file__).resolve().parent.parent / "tools" / "publish_sheet.py"

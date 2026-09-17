@@ -7,8 +7,8 @@ human can go and check.
 
 import pytest
 
-from offpeak import prices
-from offpeak.prices import (
+from firming import prices
+from firming.prices import (
     BATCH_DISCOUNT,
     batch_cost_usd,
     get_price,

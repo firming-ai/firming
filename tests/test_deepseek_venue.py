@@ -1,5 +1,5 @@
 """DeepSeek venue — network-free. There is no live receipt yet; see the module
-warning in ``offpeak.venues.deepseek_clock``.
+warning in ``firming.venues.deepseek_clock``.
 
 The clock is the whole venue, so the clock is most of the test: fixed instants
 on both sides of every boundary the schedule has, including the Friday 10:00
@@ -12,15 +12,15 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-import offpeak
-from offpeak import job
-from offpeak.venues.base import BatchState
-from offpeak.venues.deepseek_clock import (
+import firming
+from firming import job
+from firming.venues.base import BatchState
+from firming.venues.deepseek_clock import (
     BASE_URL,
     DeepSeekClock,
     is_peak,
-    next_offpeak_start,
-    offpeak_until,
+    next_off_peak_start,
+    off_peak_until,
     paid_fraction,
     rate_multiplier,
 )
@@ -117,8 +117,8 @@ class TestClockHelpers:
             (at(2026, 8, MON, 6, 0, 0), at(2026, 8, MON, 10, 0)),
         ],
     )
-    def test_next_offpeak_start_is_the_end_of_the_current_block(self, instant, release):
-        assert next_offpeak_start(instant) == release
+    def test_next_off_peak_start_is_the_end_of_the_current_block(self, instant, release):
+        assert next_off_peak_start(instant) == release
 
     @pytest.mark.parametrize(
         "instant",
@@ -130,8 +130,8 @@ class TestClockHelpers:
             at(2026, 8, SUN, 7, 0),
         ],
     )
-    def test_next_offpeak_start_is_now_when_now_is_off_peak(self, instant):
-        assert next_offpeak_start(instant) == instant
+    def test_next_off_peak_start_is_now_when_now_is_off_peak(self, instant):
+        assert next_off_peak_start(instant) == instant
 
     @pytest.mark.parametrize(
         "instant,until",
@@ -148,18 +148,18 @@ class TestClockHelpers:
             (at(2026, 8, 31, 0, 0), at(2026, 8, 31, 1, 0)),  # Monday, before the block
         ],
     )
-    def test_offpeak_until_is_the_next_peak_block_start(self, instant, until):
-        assert offpeak_until(instant) == until
+    def test_off_peak_until_is_the_next_peak_block_start(self, instant, until):
+        assert off_peak_until(instant) == until
 
     @pytest.mark.parametrize("instant", [at(2026, 8, MON, 2, 0), at(2026, 8, FRI, 7, 0)])
-    def test_offpeak_until_is_none_at_peak(self, instant):
+    def test_off_peak_until_is_none_at_peak(self, instant):
         # No off-peak stretch contains a peak instant; None, not a guess.
-        assert offpeak_until(instant) is None
+        assert off_peak_until(instant) is None
 
     def test_the_weekend_stretch_is_one_stretch(self):
         # Friday 10:00 to Monday 01:00: 63 hours of off-peak, unbroken.
         start = at(2026, 8, FRI, 10, 0)
-        assert offpeak_until(start) - start == timedelta(hours=63)
+        assert off_peak_until(start) - start == timedelta(hours=63)
 
     @pytest.mark.parametrize(
         "instant,multiplier,fraction",
@@ -176,7 +176,7 @@ class TestClockHelpers:
     def test_the_off_peak_fraction_is_the_batch_rule(self):
         # The same constant on purpose: the sheet stores the peak rate as
         # standard, and BATCH_DISCOUNT reproduces the published off-peak row.
-        assert paid_fraction(at(2026, 8, SAT, 12, 0)) == offpeak.prices.BATCH_DISCOUNT
+        assert paid_fraction(at(2026, 8, SAT, 12, 0)) == firming.prices.BATCH_DISCOUNT
 
 
 class TestRouting:
@@ -192,7 +192,7 @@ class TestRouting:
 
     def test_is_not_in_default_venues(self):
         # Opt-in like Groq, Mistral and Gemini: its own key, its own extra.
-        assert "deepseek:clock" not in {v.name for v in offpeak.default_venues()}
+        assert "deepseek:clock" not in {v.name for v in firming.default_venues()}
 
     def test_base_url_is_deepseeks(self):
         assert BASE_URL == "https://api.deepseek.com"
@@ -370,18 +370,18 @@ class TestSettlement:
     def _run(self, clock, client, deadline="6h", **kwargs):
         venue = DeepSeekClock(client=client, clock=clock, max_workers=1)
         jobs = [job("deepseek-v4-flash", "a"), job("deepseek-v4-flash", "b")]
-        return offpeak.run(jobs, deadline, venues=[venue], poll_interval=0, **kwargs)
+        return firming.run(jobs, deadline, venues=[venue], poll_interval=0, **kwargs)
 
     def test_off_peak_execution_pays_half_of_list(self):
         results = self._run(FakeClock(at(2026, 8, SAT, 12, 0)), FakeDeepSeekClient())
         assert all(r.ok for r in results)
-        assert all(r.job.status is offpeak.Status.SUCCEEDED for r in results)
+        assert all(r.job.status is firming.Status.SUCCEEDED for r in results)
         r = results[0].receipt
         # 100 in at $0.44/M, 10 out at $1.32/M: list $0.0000572, paid half.
         assert r.list_usd == pytest.approx(0.0000572)
         assert r.paid_usd == pytest.approx(0.0000286)
         assert r.paid_fraction == 0.5
-        settlement = offpeak.receipt(results)
+        settlement = firming.receipt(results)
         assert settlement.captured_pct == pytest.approx(50.0)
         assert settlement.by_venue == {"deepseek:clock": 2}
         assert settlement.left_on_table_usd == 0.0
@@ -393,13 +393,13 @@ class TestSettlement:
         client = FakeDeepSeekClient()
         results = self._run(clock, client, deadline="30m", risk_buffer=10**9)
         assert all(r.ok for r in results)
-        assert all(r.job.status is offpeak.Status.FELL_BACK for r in results)
+        assert all(r.job.status is firming.Status.FELL_BACK for r in results)
         r = results[0].receipt
         assert r.fell_back
         assert r.paid_fraction == 1.0
         assert r.paid_usd == r.list_usd
         assert r.spread_usd == 0.0
-        settlement = offpeak.receipt(results)
+        settlement = firming.receipt(results)
         assert settlement.captured_pct == pytest.approx(0.0)
         assert settlement.fell_back == 2
         assert settlement.left_on_table_usd == pytest.approx(settlement.list_usd * 0.5)
@@ -422,14 +422,14 @@ class TestSettlement:
             return original(**kwargs)
 
         client.create = create
-        results = offpeak.run(jobs, "6h", venues=[venue], poll_interval=0)
+        results = firming.run(jobs, "6h", venues=[venue], poll_interval=0)
         rescued = results[1]
         assert rescued.ok
-        assert rescued.job.status is offpeak.Status.FELL_BACK
+        assert rescued.job.status is firming.Status.FELL_BACK
         assert rescued.receipt.fell_back
         assert rescued.receipt.paid_fraction == 0.5
         assert rescued.receipt.paid_usd == pytest.approx(rescued.receipt.list_usd * 0.5)
-        settlement = offpeak.receipt(results)
+        settlement = firming.receipt(results)
         assert settlement.fell_back == 1
         assert settlement.captured_pct == pytest.approx(50.0)
         assert settlement.left_on_table_usd == 0.0
@@ -440,7 +440,7 @@ class TestSettlement:
         # exactly as before this field existed.
         from test_run import FakeVenue
 
-        results = offpeak.run(
+        results = firming.run(
             [job("claude-haiku-4-5", "x")], "8h", venues=[FakeVenue()], poll_interval=0
         )
         assert results[0].receipt.paid_fraction is None
@@ -449,9 +449,9 @@ class TestSettlement:
 
 class TestPricing:
     def test_the_peak_rate_is_the_standard_row(self):
-        assert offpeak.prices.get_price("deepseek-v4-flash") == (0.44, 1.32)
-        assert offpeak.prices.get_price("deepseek-v4-pro") == (1.32, 3.96)
-        assert offpeak.prices.get_price("deepseek-v4-flash-vision-exp") == (0.44, 1.32)
+        assert firming.prices.get_price("deepseek-v4-flash") == (0.44, 1.32)
+        assert firming.prices.get_price("deepseek-v4-pro") == (1.32, 3.96)
+        assert firming.prices.get_price("deepseek-v4-flash-vision-exp") == (0.44, 1.32)
 
     @pytest.mark.parametrize(
         "model,off_peak",
@@ -461,22 +461,22 @@ class TestPricing:
         ],
     )
     def test_the_batch_rule_reproduces_the_published_off_peak_column(self, model, off_peak):
-        assert offpeak.prices.batch_cost_usd(model, 1_000_000, 0) == pytest.approx(off_peak[0])
-        assert offpeak.prices.batch_cost_usd(model, 0, 1_000_000) == pytest.approx(off_peak[1])
+        assert firming.prices.batch_cost_usd(model, 1_000_000, 0) == pytest.approx(off_peak[0])
+        assert firming.prices.batch_cost_usd(model, 0, 1_000_000) == pytest.approx(off_peak[1])
 
     def test_the_lane_is_a_clock_not_a_batch(self):
-        assert offpeak.prices.lane_for("deepseek-v4-flash") == "clock"
-        assert offpeak.prices.lane_for("deepseek-v4-pro-2026-09-01") == "clock"
-        assert offpeak.prices.lane_for("gpt-5.6-luna") == "batch"
-        assert offpeak.prices.lane_for("qwen3.7-max") == "batch"
-        assert offpeak.prices.lane_for("not-a-model") is None
+        assert firming.prices.lane_for("deepseek-v4-flash") == "clock"
+        assert firming.prices.lane_for("deepseek-v4-pro-2026-09-01") == "clock"
+        assert firming.prices.lane_for("gpt-5.6-luna") == "batch"
+        assert firming.prices.lane_for("qwen3.7-max") == "batch"
+        assert firming.prices.lane_for("not-a-model") is None
 
     def test_no_fast_tier_is_implied(self):
-        assert offpeak.prices.get_fast_price("deepseek-v4-flash") is None
-        assert offpeak.prices.urgency_spread("deepseek-v4-flash") is None
+        assert firming.prices.get_fast_price("deepseek-v4-flash") is None
+        assert firming.prices.urgency_spread("deepseek-v4-flash") is None
 
     def test_a_quote_prices_the_clock_lane_like_a_batch(self):
-        q = offpeak.quote(
+        q = firming.quote(
             [job("deepseek-v4-pro", "hi", max_tokens=256)],
             "6h",
             venues=[DeepSeekClock(client=object())],

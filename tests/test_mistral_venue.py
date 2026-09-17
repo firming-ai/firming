@@ -4,10 +4,10 @@ import json
 
 import pytest
 
-import offpeak
-from offpeak import job
-from offpeak.venues.base import BatchState
-from offpeak.venues.mistral_batch import (
+import firming
+from firming import job
+from firming.venues.base import BatchState
+from firming.venues.mistral_batch import (
     DEFAULT_TIMEOUT_HOURS,
     MistralBatch,
     build_jsonl,
@@ -111,7 +111,7 @@ class TestRouting:
 
     def test_is_not_in_default_venues(self):
         # Opt-in: its own key, its own extra.
-        assert "mistral:batch" not in {v.name for v in offpeak.default_venues()}
+        assert "mistral:batch" not in {v.name for v in firming.default_venues()}
 
 
 class TestTheJsonl:
@@ -313,7 +313,7 @@ class TestCancel:
 
 class TestPricing:
     def test_a_mistral_quote_captures_a_real_spread(self):
-        q = offpeak.quote(
+        q = firming.quote(
             [job("mistral-small-latest", "hi", max_tokens=64)],
             "48h",
             venues=[MistralBatch(client=object())],

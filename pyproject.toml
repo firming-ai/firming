@@ -3,21 +3,21 @@ requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "offpeak"
-version = "0.3.1.dev0"
-description = "Deadline-priced inference: give AI jobs a deadline and run them on the cheapest venue that still meets it — provider batch tiers, 50% off, today. The deadline is the input; the discount follows."
+name = "firming"
+version = "0.4.0"
+description = "Firm prices on AI inference. The batch client: place jobs on a venue's batch lane at 50% off list and rescue them at the standard lane before the deadline. The sidecar and the price guarantee ship here next."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
-authors = [{ name = "Offpeak" }]
+authors = [{ name = "Firming" }]
 keywords = [
   "llm",
   "inference",
   "batch",
   "batch-api",
   "deadline",
-  "scheduling",
+  "pricing",
   "cost-optimization",
   "openai",
   "anthropic",
@@ -54,14 +54,14 @@ docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.5,<10", "mkdocstrings[python]>=0.2
         "mkdocs-redirects>=1.2"]
 
 [project.urls]
-Homepage = "https://off-peak.ai"
+Homepage = "https://firming.ai"
 Documentation = "https://firming-ai.github.io/firming/"
 Repository = "https://github.com/firming-ai/firming"
 Issues = "https://github.com/firming-ai/firming/issues"
 Changelog = "https://github.com/firming-ai/firming/releases"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/offpeak"]
+packages = ["src/firming"]
 
 [tool.ruff]
 line-length = 100

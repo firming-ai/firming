@@ -1,56 +1,56 @@
 # API reference
 
-Everything below is exported from the package root: `offpeak.run`,
-`offpeak.Job`, and so on.
+Everything below is exported from the package root: `firming.run`,
+`firming.Job`, and so on.
 
 ## Running work
 
-::: offpeak.run
+::: firming.run
 
-::: offpeak.submit
+::: firming.submit
 
-::: offpeak.collect
+::: firming.collect
 
-::: offpeak.status
+::: firming.status
 
-::: offpeak.quote
+::: firming.quote
 
-::: offpeak.receipt
+::: firming.receipt
 
-::: offpeak.job
+::: firming.job
 
 ## Types
 
-::: offpeak.Job
+::: firming.Job
 
-::: offpeak.Ticket
+::: firming.Ticket
 
-::: offpeak.Result
+::: firming.Result
 
-::: offpeak.Receipt
+::: firming.Receipt
 
-::: offpeak.Status
+::: firming.Status
 
-::: offpeak.Settlement
+::: firming.Settlement
 
-::: offpeak.Quote
+::: firming.Quote
 
-::: offpeak.VenueQuote
+::: firming.VenueQuote
 
 ## Deadlines
 
-::: offpeak.parse_deadline
+::: firming.parse_deadline
 
-::: offpeak.seconds_until
+::: firming.seconds_until
 
 ## Venues
 
-::: offpeak.Venue
+::: firming.Venue
 
-::: offpeak.BatchState
+::: firming.BatchState
 
-::: offpeak.default_venues
+::: firming.default_venues
 
 ## Prices
 
-::: offpeak.prices
+::: firming.prices

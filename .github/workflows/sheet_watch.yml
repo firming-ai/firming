@@ -106,7 +106,7 @@ jobs:
         run: |
           # The classifier's default deadline is the next 06:00Z. On the
           # 03:07 cron that is a three-hour window; on a catch-up at 20:43 it
-          # is ten hours, and offpeak.run would hold this job — and the
+          # is ten hours, and firming.run would hold this job — and the
           # board-data concurrency group with it — for all of them. Bound it.
           deadline=$(python -c 'import datetime as d; print((d.datetime.now(d.timezone.utc) + d.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ"))')
           echo "classifier deadline: $deadline"
@@ -135,7 +135,7 @@ jobs:
         id: reconcile
         # Deliberately *not* gated on the guard. The watch answers "did the page
         # move since yesterday", so a skipped reading has nothing to add. This
-        # answers "does the page agree with src/offpeak/prices.py today", and
+        # answers "does the page agree with src/firming/prices.py today", and
         # that can change with no page movement at all — someone edits the sheet
         # on main and the pages sit still. It reads only committed text, makes no
         # network call, and costs nothing, so it runs every time.
@@ -190,7 +190,7 @@ jobs:
         # source's drift is a conversation about one provider's page, and a new
         # issue every morning would bury the thread the row belongs to.
         #
-        # This step **never edits src/offpeak/prices.py**, and no step in this
+        # This step **never edits src/firming/prices.py**, and no step in this
         # workflow may. That is the same rule the watch has kept since it
         # shipped, for the same reason: a page moves for a dozen reasons that
         # are not a price change, and CI that rewrote the sheet on a parse would

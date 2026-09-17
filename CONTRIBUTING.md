@@ -6,7 +6,7 @@ Thanks for helping build the deadline standard.
 
 ```bash
 git clone https://github.com/firming-ai/firming
-cd offpeak
+cd firming
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```
@@ -22,7 +22,7 @@ Both run in CI on every PR. Tests are network-free — venue drivers are tested 
 
 ## What's welcome
 
-- New venue drivers (implement `offpeak.Venue`; keep provider SDKs behind optional extras).
+- New venue drivers (implement `firming.Venue`; keep provider SDKs behind optional extras).
 - Deadline-form and receipt improvements.
 - Price-sheet corrections (cite the provider's public pricing page in the PR).
 

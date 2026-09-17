@@ -26,14 +26,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from offpeak import format_usd  # noqa: E402
+from firming import format_usd  # noqa: E402
 
 REQUIRED = ("run_id", "scale", "settled_utc", "jobs", "list_usd", "paid_usd")
 
 #: Wire format of the machine-readable ledger written beside SETTLED.md.
 #: The Markdown is for people; this is for the website and anyone else who
 #: would otherwise have to scrape a table or hand-copy rows into a page.
-SETTLED_SCHEMA = "offpeak.settled-runs/1"
+SETTLED_SCHEMA = "firming.settled-runs/1"
 
 #: Namespace for :func:`receipt_uuid`. Fixed forever: the whole value of a
 #: derived id is that anyone can recompute it, and a namespace that moved would
@@ -66,7 +66,7 @@ _SECRET_SHAPED = (
 _ARTIFACT_ONLY = ("per_job", "results", "messages", "prompts", "raw")
 
 SETTLED_HEADER = (
-    "# Offpeak settled runs — real money\n\n"
+    "# Firming settled runs — real money\n\n"
     "Every row here is a run that executed and billed: list price, price paid, "
     "and the spread captured, as arithmetic against the price sheet named in "
     "the row. This is the ledger `BOARD.md` is not — that one marks open grid "
@@ -215,7 +215,7 @@ def as_record(record: dict) -> dict:
         "scale": record["scale"],
         "settled_utc": record["settled_utc"],
         "price_sheet": record.get("price_sheet"),
-        "offpeak_version": record.get("offpeak_version"),
+        "firming_version": record.get("firming_version", record.get("offpeak_version")),
         "jobs": record["jobs"],
         "ok": record.get("ok"),
         "failed": record.get("failed"),

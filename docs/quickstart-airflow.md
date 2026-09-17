@@ -5,20 +5,20 @@ Your task gains one argument.
 Airflow has said when work must finish since long before anyone batched an LLM.
 Two of its native concepts are already deadlines, stated in Airflow's own words:
 
-| Airflow says | It means | `offpeak` deadline |
+| Airflow says | It means | `firming` deadline |
 | --- | --- | --- |
 | `schedule="0 6 * * *"` | this runs again tomorrow at 06:00 | finish before the next run |
 | `sla=timedelta(hours=4)` | late after four hours | `data_interval_end + sla` |
 
-So there is no `offpeak-airflow` package, and there will not be one.
-`offpeak.run()` takes jobs and a deadline, returns one `Result` per job, and
+So there is no `firming-airflow` package, and there will not be one.
+`firming.run()` takes jobs and a deadline, returns one `Result` per job, and
 keeps nothing between calls. Airflow already owns the schedule, the retries and
 the alerting.
 
 ## Install
 
 ```bash
-pip install "offpeak[all]" "apache-airflow>=2.7"
+pip install "firming[all]" "apache-airflow>=2.7"
 ```
 
 ## Deadline = the next run
@@ -27,7 +27,7 @@ The DAG's own cadence is sitting in the task context. The data interval is one
 schedule period, so one period past its end is when this DAG runs again:
 
 ```python
-import offpeak
+import firming
 import pendulum
 from airflow.decorators import dag, task
 
@@ -47,12 +47,12 @@ def nightly_digest():
         deadline = end + (end - start)
 
         jobs = [
-            offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512)
+            firming.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512)
             for d in docs
         ]
-        results = offpeak.run(jobs, deadline)
+        results = firming.run(jobs, deadline)
 
-        print(offpeak.receipt(results))
+        print(firming.receipt(results))
         return [r.text or "" for r in results]
 
     summarize(docs=["..."])
@@ -62,10 +62,10 @@ nightly_digest()
 ```
 
 `data_interval_start` and `data_interval_end` arrive as `pendulum.DateTime`,
-which subclasses `datetime.datetime` and is already timezone-aware. `offpeak`
+which subclasses `datetime.datetime` and is already timezone-aware. `firming`
 takes it as-is — no string, no conversion, no assumed timezone.
 
-The deadline is the consumer's need — *summaries ready by 06:00* — not a request to run the work late. `offpeak` submits immediately and the venue is free to return any time before the window closes; observed batch completion on the [queue board](https://github.com/firming-ai/firming/blob/board-data/nightly/QUEUE.md) runs in minutes, not hours. The window buys the discount and the provider's freedom to choose when — never a delay you asked for.
+The deadline is the consumer's need — *summaries ready by 06:00* — not a request to run the work late. `firming` submits immediately and the venue is free to return any time before the window closes; observed batch completion on the [queue board](https://github.com/firming-ai/firming/blob/board-data/nightly/QUEUE.md) runs in minutes, not hours. The window buys the discount and the provider's freedom to choose when — never a delay you asked for.
 
 ## Deadline = the SLA
 
@@ -83,8 +83,8 @@ SLA = timedelta(hours=4)
 def summarize(docs: list[str], **context) -> list[str]:
     deadline = context["data_interval_end"] + SLA
 
-    jobs = [offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
-    results = offpeak.run(jobs, deadline)
+    jobs = [firming.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
+    results = firming.run(jobs, deadline)
     return [r.text or "" for r in results]
 ```
 
@@ -122,8 +122,8 @@ latency:
 def price_the_wait(docs: list[str], **context) -> float:
     end = context["data_interval_end"]
     deadline = end + (end - context["data_interval_start"])
-    jobs = [offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
-    return offpeak.quote(jobs, deadline=deadline).spread_usd
+    jobs = [firming.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
+    return firming.quote(jobs, deadline=deadline).spread_usd
 ```
 
 ## Two things that will bite you
@@ -140,14 +140,14 @@ def price_the_wait(docs: list[str], **context) -> float:
 
     ```python
     horizon = max(deadline, pendulum.now("UTC") + timedelta(hours=24))
-    results = offpeak.run(jobs, horizon)
+    results = firming.run(jobs, horizon)
     ```
 
     That is a choice about your data, so it belongs in your DAG rather than in
     the library.
 
 !!! warning "Airflow retries do not re-run a settled batch"
-    `offpeak.run()` does not raise on provider failure. A venue that dies at
+    `firming.run()` does not raise on provider failure. A venue that dies at
     submit, poll or fallback returns a failed `Result` carrying the provider's
     message while every other job settles normally, so a task-level `retries`
     will not fire on it. Exceptions are reserved for programming errors — a bad
@@ -168,7 +168,7 @@ def price_the_wait(docs: list[str], **context) -> float:
 ## What you get back
 
 ```
-OFFPEAK SETTLEMENT ────────────────────────────
+FIRMING SETTLEMENT ────────────────────────────
 jobs      5000 (5000 ok, 120 sync fallback, 0 failed)
 sla       5000/5000 met
 venues    anthropic:batch 3000 · openai:batch 2000
@@ -177,11 +177,11 @@ list      $2,469.00
 paid      $1,234.50
 captured  $1,234.50 (50.0%)
 left      $29.63 on the table (120 job(s) missed the batch tier)
-prices    snapshot 2026-08-28 — override via offpeak.prices
+prices    snapshot 2026-08-28 — override via firming.prices
 ───────────────────────────────────────────────
 ```
 
-`sla 5000/5000 met` is `offpeak`'s own accounting of the deadline you handed it,
+`sla 5000/5000 met` is `firming`'s own accounting of the deadline you handed it,
 which is the same promise Airflow is watching from the outside.
 
 See the **[Quickstart](quickstart.md)** for `quote()`, `run()` and receipts in

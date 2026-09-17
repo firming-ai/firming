@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from offpeak import prices
+from firming import prices
 
 _spec = importlib.util.spec_from_file_location(
     "sheet_reconcile", Path(__file__).resolve().parent.parent / "tools" / "sheet_reconcile.py"

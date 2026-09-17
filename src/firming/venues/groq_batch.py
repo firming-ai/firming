@@ -32,7 +32,7 @@ across the range, the same as the other venues. What a longer window buys is
 completion probability, not price. If Groq ever prices the curve, this is
 where that would land.
 
-Requires the ``groq`` extra: ``pip install "offpeak[groq]"``.
+Requires the ``groq`` extra: ``pip install "firming[groq]"``.
 """
 
 from __future__ import annotations
@@ -105,7 +105,7 @@ _MODEL_PREFIXES = (
 # live one. Add the exact live spelling here if you want it, deliberately.
 
 # Audio models are deliberately absent. Whisper is live on Groq and this driver
-# still cannot run it: :func:`~offpeak.venues.openai_batch.build_jsonl` writes
+# still cannot run it: :func:`~firming.venues.openai_batch.build_jsonl` writes
 # ``/v1/chat/completions`` with a ``messages`` body, and transcription wants
 # ``/v1/audio/transcriptions`` with a file. Claiming a model the request shape
 # cannot serve buys a batch of 400s hours after submission.
@@ -123,7 +123,7 @@ def window_for_seconds(seconds: float) -> str:
     Groq recommends the longest window you can afford, so this reaches for the
     top of the curve rather than the bottom. A deadline shorter than the
     shortest published window still returns ``"24h"`` — the batch may not land,
-    which is exactly the case ``offpeak``'s sync fallback exists to cover.
+    which is exactly the case ``firming``'s sync fallback exists to cover.
     """
     fitting = [w for w in COMPLETION_WINDOWS if _WINDOW_SECONDS[w] <= seconds]
     return fitting[-1] if fitting else COMPLETION_WINDOWS[0]
@@ -153,7 +153,7 @@ class GroqBatch(OpenAIBatch):
                 from groq import Groq
             except ImportError as exc:  # pragma: no cover
                 raise ImportError(
-                    'Groq venue requires the groq SDK: pip install "offpeak[groq]"'
+                    'Groq venue requires the groq SDK: pip install "firming[groq]"'
                 ) from exc
             self._client = Groq()
         return self._client
@@ -167,7 +167,7 @@ class GroqBatch(OpenAIBatch):
         payload = build_jsonl(jobs)
         self._check_limits(jobs, payload)
         upload = self.client.files.create(
-            file=("offpeak_batch.jsonl", payload), purpose="batch"
+            file=("firming_batch.jsonl", payload), purpose="batch"
         )
         batch = self.client.batches.create(
             input_file_id=upload.id,

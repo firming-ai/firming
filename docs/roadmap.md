@@ -24,7 +24,7 @@ Stated plainly, because a roadmap that reads like a feature list is a
 misleading one:
 
 - **No queue-latency forecasting.** Deadline risk is a fixed buffer, not a
-  prediction. `offpeak` does not know how long a given venue's queue is; it
+  prediction. `firming` does not know how long a given venue's queue is; it
   watches the clock and falls back.
 - **No cross-venue portfolio placement.** Jobs route to the first venue that
   supports the model, not to the cheapest or fastest across a portfolio.
@@ -59,21 +59,26 @@ misleading one:
   24 real jobs, all of them through the sync fallback at list price, nothing
   captured.
 
-## The hosted desk
+## The sidecar
 
-A hosted desk that does the forecasting, cross-venue portfolio scheduling, and
-SLA insurance at fleet scale — with payloads never leaving your perimeter — is
-being built by the same team.
+What Firming is building next is not more scheduling — it is a **price**. The
+sidecar runs inside your perimeter (`firming serve --port 8787`; point
+`OPENAI_BASE_URL` at it), serves each request on the venue's discount lane
+inside a per-request budget, rescues it at the standard lane when the discount
+lane does not fill, and writes a receipt for every call. The price is 20% under
+list, firm for the month, never worse than list, settled on the 1st against
+your own venue invoice. The [README](https://github.com/firming-ai/firming#the-guarantee)
+carries the contract; **FILL**, the fill-rate index behind the rate sheet, is
+published on the `board-data` branch.
 
-The intended seam is the one already in the library: a desk would be selected
-per run, alongside the venues you already pass, so that moving from local
-scheduling to hosted scheduling is a keyword argument rather than a rewrite.
+The batch client on this page is the same ladder at a coarser grain — batch
+lane first, standard lane before the deadline — and stays supported.
 
 !!! note "Not implemented"
-    That parameter does not exist in the public API today, and nothing in this
-    release accepts it. It is described here so the shape of the plan is
-    legible — not as something you can call. The SDK and the deadline spec stay
-    open, Apache-2.0, either way.
+    `firming serve`, the rate feed and the receipts format are in build and
+    nothing in this release provides them. They are described here so the shape
+    of the plan is legible — not as something you can call. The batch client
+    and the deadline spec stay open, Apache-2.0, either way.
 
 ## The spec
 

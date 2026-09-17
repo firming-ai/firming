@@ -2,10 +2,10 @@
 
 import pytest
 
-import offpeak
-from offpeak import job
-from offpeak.venues.base import BatchState
-from offpeak.venues.groq_batch import (
+import firming
+from firming import job
+from firming.venues.base import BatchState
+from firming.venues.groq_batch import (
     COMPLETION_WINDOWS,
     MAX_INPUT_BYTES,
     MAX_JSONL_LINES,
@@ -144,7 +144,7 @@ class TestRouting:
     def test_is_not_in_default_venues(self):
         # Opt-in: Groq needs its own key and its own extra, and a model name
         # should not start costing money at a venue nobody asked for.
-        assert "groq:batch" not in {v.name for v in offpeak.default_venues()}
+        assert "groq:batch" not in {v.name for v in firming.default_venues()}
 
 
 class TestPublishedLimits:
@@ -156,7 +156,7 @@ class TestPublishedLimits:
         assert client.uploaded is None, "nothing should have crossed the wire"
 
     def test_an_oversized_file_is_refused_before_the_upload(self, monkeypatch):
-        import offpeak.venues.groq_batch as gb
+        import firming.venues.groq_batch as gb
 
         monkeypatch.setattr(gb, "MAX_INPUT_BYTES", 32)
         client = FakeGroqClient()
@@ -218,23 +218,23 @@ class TestPricing:
         # Before this the sheet had no Groq rows at all, so a Groq settlement
         # produced a receipt with no cost and no captured spread — a real run
         # that looked like it had been free.
-        assert offpeak.prices.get_price("openai/gpt-oss-120b") == (0.15, 0.60)
-        assert offpeak.prices.get_price("openai/gpt-oss-20b") == (0.075, 0.30)
+        assert firming.prices.get_price("openai/gpt-oss-120b") == (0.15, 0.60)
+        assert firming.prices.get_price("openai/gpt-oss-20b") == (0.075, 0.30)
 
     def test_the_batch_tier_is_the_standard_fifty_percent_rule(self):
         for model in ("openai/gpt-oss-120b", "openai/gpt-oss-20b"):
-            listed = offpeak.prices.list_cost_usd(model, 1_000_000, 1_000_000)
-            batched = offpeak.prices.batch_cost_usd(model, 1_000_000, 1_000_000)
+            listed = firming.prices.list_cost_usd(model, 1_000_000, 1_000_000)
+            batched = firming.prices.batch_cost_usd(model, 1_000_000, 1_000_000)
             assert batched == pytest.approx(listed * 0.5)
 
     def test_groq_publishes_no_fast_tier_so_none_is_implied(self):
         # An urgency spread the venue does not sell is not one this sheet
         # should invent.
-        assert offpeak.prices.get_fast_price("openai/gpt-oss-120b") is None
-        assert offpeak.prices.urgency_spread("openai/gpt-oss-120b") is None
+        assert firming.prices.get_fast_price("openai/gpt-oss-120b") is None
+        assert firming.prices.urgency_spread("openai/gpt-oss-120b") is None
 
     def test_a_priced_groq_quote_captures_a_real_spread(self):
-        q = offpeak.quote(
+        q = firming.quote(
             [job("openai/gpt-oss-20b", "hi", max_tokens=256)],
             "48h",
             venues=[GroqBatch(client=object())],
@@ -247,8 +247,8 @@ class TestPricing:
         # The sheet's contract, unchanged: a model nobody published a rate for
         # settles as unpriced, never as free. Groq models used to land here;
         # now only genuinely unknown ones do.
-        assert offpeak.prices.get_price("some-unlisted-model-v9") is None
-        q = offpeak.quote(
+        assert firming.prices.get_price("some-unlisted-model-v9") is None
+        q = firming.quote(
             [job("groq/compound", "hi", max_tokens=10)],
             "48h",
             venues=[GroqBatch(client=object())],

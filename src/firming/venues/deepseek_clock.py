@@ -76,7 +76,7 @@ The API
 -------
 
 OpenAI-compatible at ``https://api.deepseek.com``, so the ``openai`` SDK is
-the client (``pip install "offpeak[deepseek]"``) and the key is read from
+the client (``pip install "firming[deepseek]"``) and the key is read from
 ``DEEPSEEK_API_KEY``. Two things about the V4 family are worth knowing before
 setting a ceiling:
 
@@ -119,8 +119,8 @@ __all__ = [
     "BASE_URL",
     "PEAK_BLOCKS_UTC",
     "is_peak",
-    "next_offpeak_start",
-    "offpeak_until",
+    "next_off_peak_start",
+    "off_peak_until",
     "rate_multiplier",
     "paid_fraction",
 ]
@@ -142,7 +142,7 @@ PEAK_BLOCKS_UTC: tuple[tuple[time, time], ...] = (
 #: peak rates" and the batch venues' "50% of list" are the same spread, and
 #: sharing the constant is what lets ``batch_cost_usd`` settle an off-peak job
 #: with no special case.
-OFFPEAK_FRACTION = BATCH_DISCOUNT
+OFF_PEAK_FRACTION = BATCH_DISCOUNT
 
 _MODEL_PREFIXES = ("deepseek-",)
 
@@ -176,7 +176,7 @@ def is_peak(dt_utc: datetime) -> bool:
     return any(start <= t < end for start, end in PEAK_BLOCKS_UTC)
 
 
-def next_offpeak_start(dt_utc: datetime) -> datetime:
+def next_off_peak_start(dt_utc: datetime) -> datetime:
     """The instant a job submitted at *dt_utc* can run off-peak.
 
     *dt_utc* itself when it is already off-peak — a hold placed at an off-peak
@@ -194,7 +194,7 @@ def next_offpeak_start(dt_utc: datetime) -> datetime:
     raise AssertionError("is_peak and PEAK_BLOCKS_UTC disagree")  # pragma: no cover
 
 
-def offpeak_until(dt_utc: datetime) -> datetime | None:
+def off_peak_until(dt_utc: datetime) -> datetime | None:
     """When the off-peak stretch containing *dt_utc* ends — the next peak
     block's start — or ``None`` when *dt_utc* is at peak and so is not inside
     an off-peak stretch at all.
@@ -224,15 +224,15 @@ def rate_multiplier(dt_utc: datetime) -> float:
     """What a request at *dt_utc* pays relative to the off-peak rate: 2.0 at
     peak, 1.0 off-peak. The off-peak rate is the floor of the schedule, so the
     multiplier is the price of the hour in the same sense
-    :func:`~offpeak.prices.urgency_spread` is."""
+    :func:`~firming.prices.urgency_spread` is."""
     return 2.0 if is_peak(dt_utc) else 1.0
 
 
 def paid_fraction(dt_utc: datetime) -> float:
     """What a request at *dt_utc* pays as a fraction of the sheet's standard
-    (peak) rate: 1.0 at peak, :data:`OFFPEAK_FRACTION` off-peak. This is the
+    (peak) rate: 1.0 at peak, :data:`OFF_PEAK_FRACTION` off-peak. This is the
     figure a receipt settles on."""
-    return 1.0 if is_peak(dt_utc) else OFFPEAK_FRACTION
+    return 1.0 if is_peak(dt_utc) else OFF_PEAK_FRACTION
 
 
 @dataclass
@@ -280,7 +280,7 @@ class DeepSeekClock(Venue):
                 from openai import OpenAI
             except ImportError as exc:  # pragma: no cover
                 raise ImportError(
-                    'DeepSeek venue requires the openai SDK: pip install "offpeak[deepseek]"'
+                    'DeepSeek venue requires the openai SDK: pip install "firming[deepseek]"'
                 ) from exc
             key = os.environ.get("DEEPSEEK_API_KEY")
             if not key:
@@ -312,7 +312,7 @@ class DeepSeekClock(Venue):
         now = self.now()
         handle = f"hold_{uuid.uuid4().hex[:12]}"
         self._holds[handle] = _Hold(
-            jobs=list(jobs), submitted_at=now, release_at=next_offpeak_start(now)
+            jobs=list(jobs), submitted_at=now, release_at=next_off_peak_start(now)
         )
         return handle
 

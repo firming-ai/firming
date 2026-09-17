@@ -3,9 +3,9 @@
 ## Install
 
 ```bash
-pip install "offpeak[all]"        # OpenAI + Anthropic venues
-pip install "offpeak[anthropic]"  # or just one
-pip install "offpeak[openai]"
+pip install "firming[all]"        # OpenAI + Anthropic venues
+pip install "firming[anthropic]"  # or just one
+pip install "firming[openai]"
 ```
 
 The core has zero dependencies; provider SDKs load only through the extras.
@@ -19,11 +19,11 @@ Venues read the standard environment variables (`OPENAI_API_KEY`,
 the bundled sheet: list versus batch, per venue.
 
 ```bash
-python -m offpeak quote --model gpt-5.6-luna --input-tokens 800 --output-tokens 200 --jobs 5000
+python -m firming quote --model gpt-5.6-luna --input-tokens 800 --output-tokens 200 --jobs 5000
 ```
 
 ```
-OFFPEAK QUOTE ─────────────────────────────────
+FIRMING QUOTE ─────────────────────────────────
 jobs      5000 across 1 venue(s)
 deadline  2026-08-21 21:11 PDT (24.0h out)
 tokens    4,000,000 in · 1,000,000 out
@@ -42,7 +42,7 @@ prices    snapshot 2026-08-21 — estimate only, not a bill
 From Python, the same jobs you would pass to `run()`:
 
 ```python
-q = offpeak.quote(jobs, deadline="06:00")
+q = firming.quote(jobs, deadline="06:00")
 print(q.spread_usd, q.spread_pct)
 ```
 
@@ -53,8 +53,8 @@ print(q.spread_usd, q.spread_pct)
     number. Give it `max_tokens`, or explicit counts:
 
     ```python
-    offpeak.job("claude-haiku-4-5", prompt, max_tokens=512)
-    offpeak.Job(model=..., messages=[...],
+    firming.job("claude-haiku-4-5", prompt, max_tokens=512)
+    firming.Job(model=..., messages=[...],
                 metadata={"input_tokens": 800, "output_tokens": 200})
     ```
 
@@ -72,7 +72,7 @@ print(q.spread_usd, q.spread_pct)
     Give a reasoning model room — hundreds of tokens, not dozens — and price
     the ceiling you actually set, which is what `quote()` does.
 
-    `offpeak` sends the ceiling under whichever name the venue wants
+    `firming` sends the ceiling under whichever name the venue wants
     (`max_completion_tokens` where the model demands it), but it cannot make a
     ceiling large enough to answer in.
 
@@ -83,10 +83,10 @@ size, say so — and the quote prices it, marked `EST` rather than `FLOOR`:
 
 ```python
 # Across the run: assume each job writes a quarter of what it reads.
-offpeak.quote(jobs, deadline="06:00", assumed_output_ratio=0.25)
+firming.quote(jobs, deadline="06:00", assumed_output_ratio=0.25)
 
 # Or per job, which wins over a ratio and over max_tokens:
-offpeak.Job(model=..., messages=[...],
+firming.Job(model=..., messages=[...],
             metadata={"expected_output_tokens": 300})
 ```
 
@@ -105,10 +105,10 @@ counts and `max_tokens` are never overridden by it.
 ## 2. Run — against a deadline
 
 ```python
-results = offpeak.run(jobs, deadline="06:00")
+results = firming.run(jobs, deadline="06:00")
 ```
 
-Each job goes to the batch tier of a venue that supports its model. `offpeak`
+Each job goes to the batch tier of a venue that supports its model. `firming`
 polls until the work lands. If the batch has not completed by the time the
 remaining window shrinks to the risk buffer, it cancels and re-runs the
 stragglers synchronously at list price — you stated a deadline, and it is met.
@@ -119,11 +119,11 @@ Deadlines accept `"06:00"` (next occurrence), `"6h"`, `"90m"`, a `datetime`, a
 ## 3. Read the receipt
 
 ```python
-print(offpeak.receipt(results))
+print(firming.receipt(results))
 ```
 
 ```
-OFFPEAK SETTLEMENT ────────────────────────────
+FIRMING SETTLEMENT ────────────────────────────
 jobs      5000 (5000 ok, 120 sync fallback, 0 failed)
 sla       5000/5000 met
 venues    anthropic:batch 3000 · openai:batch 2000
@@ -132,7 +132,7 @@ list      $2,469.00
 paid      $1,234.50
 captured  $1,234.50 (50.0%)
 left      $29.63 on the table (120 job(s) missed the batch tier)
-prices    snapshot 2026-08-21 — override via offpeak.prices
+prices    snapshot 2026-08-21 — override via firming.prices
 ───────────────────────────────────────────────
 ```
 
@@ -147,17 +147,17 @@ stay alive that long — a laptop, a CI job, a serverless function — split the
 call in two and keep the ticket between them:
 
 ```python
-import offpeak
+import firming
 
-ticket = offpeak.submit(jobs, deadline="06:00")
+ticket = firming.submit(jobs, deadline="06:00")
 ticket.save("tonight.json")
 ```
 
 ```python
 # tomorrow, anywhere
-ticket = offpeak.Ticket.load("tonight.json")
-results = offpeak.collect(ticket)          # blocks only for what is left
-print(offpeak.receipt(results))
+ticket = firming.Ticket.load("tonight.json")
+results = firming.collect(ticket)          # blocks only for what is left
+print(firming.receipt(results))
 ```
 
 The ticket carries the jobs, the resolved deadline, the risk buffer and one
@@ -175,7 +175,7 @@ The bundled sheet is a dated snapshot. Providers move prices; override at
 runtime rather than waiting for a release:
 
 ```python
-offpeak.prices.register_price("my-fine-tune", input_per_m=4.0, output_per_m=16.0)
+firming.prices.register_price("my-fine-tune", input_per_m=4.0, output_per_m=16.0)
 ```
 
 Unknown models settle as `None`, never a guess.

@@ -25,7 +25,7 @@ no batch tier; it publishes a **clock**, with peak hours on weekdays and half
 price everywhere else. The sheet stores its peak rate as the standard row, so
 ``BATCH_DISCOUNT`` reproduces the off-peak rate exactly — but the lane is a
 clock and not a queue, and :func:`lane_for` says which. See
-:mod:`offpeak.venues.deepseek_clock`.
+:mod:`firming.venues.deepseek_clock`.
 
 Corrections
 -----------
@@ -358,7 +358,7 @@ PROMO_NOTES: dict[str, PromoNote] = {
 #: Wire format of a published sheet. Bumped only for a breaking change, and
 #: :func:`load_sheet` refuses a major version it does not know — a sheet it
 #: half-understands would price jobs against numbers it guessed at.
-SHEET_SCHEMA = "offpeak.price-sheet/1"
+SHEET_SCHEMA = "firming.price-sheet/1"
 
 # Captured at import so reset_sheet() can put the release's own numbers back
 # after a published sheet has been loaded over them.
@@ -444,7 +444,7 @@ def _read_source(source: str | Path) -> tuple[dict, str]:
             "settles real bills must not be modifiable in transit"
         )
     if text.startswith("https://"):
-        request = Request(text, headers={"User-Agent": "offpeak/price-sheet"})
+        request = Request(text, headers={"User-Agent": "firming/price-sheet"})
         with urlopen(request, timeout=30) as response:  # noqa: S310 — https enforced above
             charset = response.headers.get_content_charset() or "utf-8"
             return json.loads(response.read().decode(charset)), text
@@ -457,7 +457,7 @@ def load_sheet(source: str | Path | dict, *, replace: bool = False) -> SheetLoad
 
     *source* is an ``https://`` URL, a filesystem path, or an already-parsed
     dict. Nothing in the library calls this for you: the default sheet is the
-    one this release shipped with, so ``offpeak`` keeps working offline and a
+    one this release shipped with, so ``firming`` keeps working offline and a
     receipt settled today can still be checked next year against the numbers
     that settled it.
 
@@ -494,7 +494,7 @@ def load_sheet(source: str | Path | dict, *, replace: bool = False) -> SheetLoad
         raise ValueError(
             f"price sheet declares batch_discount {declared}, this build applies "
             f"{BATCH_DISCOUNT}. The discount is a published rule rather than a row; "
-            "upgrade offpeak rather than loading a sheet that disagrees with it"
+            "upgrade firming rather than loading a sheet that disagrees with it"
         )
 
     rows = document.get("prices") or {}

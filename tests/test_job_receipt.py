@@ -2,9 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-import offpeak
-from offpeak import Receipt, job
-from offpeak.prices import batch_cost_usd, get_price, list_cost_usd, register_price
+import firming
+from firming import Receipt, job
+from firming.prices import batch_cost_usd, get_price, list_cost_usd, register_price
 
 NOW = datetime(2026, 8, 20, 22, 0, 0, tzinfo=timezone.utc)
 
@@ -71,17 +71,17 @@ def test_fallback_pays_list_price():
 
 def test_settlement_aggregates():
     results = [
-        offpeak.Result(job=job("claude-haiku-4-5", "x"), text="ok", receipt=_receipt())
+        firming.Result(job=job("claude-haiku-4-5", "x"), text="ok", receipt=_receipt())
         for _ in range(4)
     ]
-    settlement = offpeak.receipt(results)
+    settlement = firming.receipt(results)
     assert settlement.total == 4
     assert settlement.ok == 4
     assert settlement.sla_met == 4
     assert settlement.captured_usd == pytest.approx(0.3)
     assert settlement.captured_pct == pytest.approx(50.0)
     text = str(settlement)
-    assert "OFFPEAK SETTLEMENT" in text and "captured" in text
+    assert "FIRMING SETTLEMENT" in text and "captured" in text
 
 
 def test_a_registered_price_does_not_leak_into_other_tests():

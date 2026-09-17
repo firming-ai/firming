@@ -1,19 +1,19 @@
-"""offpeak — deadline-priced inference.
+"""firming — the batch client behind Firming's firm prices on AI inference.
 
 The deadline is the input; the discount follows. Give AI work a deadline and
 run it on the cheapest venue that keeps the SLA — provider batch tiers, 50%
 off, today.
 
-    import offpeak
+    import firming
 
-    jobs = [offpeak.job("claude-haiku-4-5", f"Summarize:\\n\\n{d}") for d in docs]
-    results = offpeak.run(jobs, deadline="06:00")
-    print(offpeak.receipt(results))
+    jobs = [firming.job("claude-haiku-4-5", f"Summarize:\\n\\n{d}") for d in docs]
+    results = firming.run(jobs, deadline="06:00")
+    print(firming.receipt(results))
 
 When the process cannot wait — a laptop, a CI step — keep a ticket instead:
 
-    ticket = offpeak.submit(jobs, deadline="06:00"); ticket.save("run.json")
-    results = offpeak.collect(offpeak.Ticket.load("run.json"))   # later
+    ticket = firming.submit(jobs, deadline="06:00"); ticket.save("run.json")
+    results = firming.collect(firming.Ticket.load("run.json"))   # later
 """
 
 from importlib import metadata as _metadata
@@ -32,7 +32,7 @@ from .venues.base import BatchState, Venue
 # reporting itself as 0.2.6.dev0. Read the installed metadata instead; the
 # fallback only fires for a source tree that was never pip-installed.
 try:
-    __version__ = _metadata.version("offpeak")
+    __version__ = _metadata.version("firming")
 except _metadata.PackageNotFoundError:  # pragma: no cover - uninstalled tree
     __version__ = "0.0.0.dev0"
 

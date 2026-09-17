@@ -1,6 +1,6 @@
 # WATCH — provider sheet drift
 
-`offpeak` ships a **dated snapshot** of numbers other people publish. This table
+`firming` ships a **dated snapshot** of numbers other people publish. This table
 is the record of those pages moving underneath it.
 
 Every row is a hash diff of one page's visible text against the reading
@@ -10,11 +10,11 @@ says *that* something moved; the diff says *what*.
 
 **No number here has edited the price sheet.** Detection and resolution are
 different jobs. A page can move for a dozen reasons that are not a price change,
-so `tools/sheet_watch.py` never writes to `src/offpeak/prices.py`: a human reads
+so `tools/sheet_watch.py` never writes to `src/firming/prices.py`: a human reads
 a row and settles what it meant.
 
 The `classification` column is produced by an LLM job submitted **through
-`offpeak` itself** — batch tier, cheapest model on the sheet whose key is
+`firming` itself** — batch tier, cheapest model on the sheet whose key is
 present, deadline before the 06:30Z mark — and is *advisory*. It is allowed to
 be absent: rows publish whether or not it ran, and `unclassified` in that column
 means the classifier did not answer, never that the page did not move.

@@ -3,11 +3,11 @@
 Your activity gains one argument.
 
 Temporal already knows when work must finish — that is most of what a workflow
-engine is for. `offpeak` needs the same fact. So the integration is not a
+engine is for. `firming` needs the same fact. So the integration is not a
 package, an interceptor or a plugin: it is a `deadline` parameter threaded from
-the workflow into the activity, and a normal `offpeak.run()` call inside it.
+the workflow into the activity, and a normal `firming.run()` call inside it.
 
-There is no `offpeak-temporal` adapter, and there will not be one. `run()` holds
+There is no `firming-temporal` adapter, and there will not be one. `run()` holds
 no state between calls — it takes jobs and a deadline, returns one `Result` per
 job, and forgets you. Anything an adapter would own, Temporal already owns
 better.
@@ -15,7 +15,7 @@ better.
 ## Install
 
 ```bash
-pip install "offpeak[all]" temporalio
+pip install "firming[all]" temporalio
 ```
 
 ## The activity
@@ -23,7 +23,7 @@ pip install "offpeak[all]" temporalio
 ```python
 import asyncio
 
-import offpeak
+import firming
 from temporalio import activity
 
 
@@ -31,14 +31,14 @@ from temporalio import activity
 async def summarize(docs: list[str], deadline: str) -> list[str]:
     """Summarize documents by `deadline`, on the cheapest venue that makes it."""
     jobs = [
-        offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512)
+        firming.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512)
         for d in docs
     ]
 
     # run() blocks — it submits, then polls until the batch lands. Off the event
     # loop it goes, with a heartbeat so Temporal can tell "waiting on a batch
     # tier" apart from "the worker died".
-    task = asyncio.create_task(asyncio.to_thread(offpeak.run, jobs, deadline))
+    task = asyncio.create_task(asyncio.to_thread(firming.run, jobs, deadline))
     while True:
         done, _ = await asyncio.wait({task}, timeout=30)
         activity.heartbeat()
@@ -46,13 +46,13 @@ async def summarize(docs: list[str], deadline: str) -> list[str]:
             break
 
     results = task.result()
-    activity.logger.info("offpeak settlement\n%s", offpeak.receipt(results))
+    activity.logger.info("firming settlement\n%s", firming.receipt(results))
     return [r.text or "" for r in results]
 ```
 
 That is the whole integration. `deadline` is the one new argument.
 
-The deadline is the consumer's need — *summaries ready by 06:00* — not a request to run the work late. `offpeak` submits immediately and the venue is free to return any time before the window closes; observed batch completion on the [queue board](https://github.com/firming-ai/firming/blob/board-data/nightly/QUEUE.md) runs in minutes, not hours. The window buys the discount and the provider's freedom to choose when — never a delay you asked for.
+The deadline is the consumer's need — *summaries ready by 06:00* — not a request to run the work late. `firming` submits immediately and the venue is free to return any time before the window closes; observed batch completion on the [queue board](https://github.com/firming-ai/firming/blob/board-data/nightly/QUEUE.md) runs in minutes, not hours. The window buys the discount and the provider's freedom to choose when — never a delay you asked for.
 
 ## The workflow
 
@@ -94,7 +94,7 @@ class NightlyDigest:
     up.
 
 !!! danger "Pass an absolute instant — never `\"06:00\"`"
-    `offpeak` accepts `"06:00"` and resolves it to **the next occurrence**:
+    `firming` accepts `"06:00"` and resolves it to **the next occurrence**:
     today if that is still ahead, otherwise tomorrow. That is the right rule for
     a session and the wrong one under a retry policy. An activity that fails at
     05:58 and retries at 06:01 would silently reprice against tomorrow morning —
@@ -113,7 +113,7 @@ class NightlyDigest:
 
 ## Retries need no special handling
 
-`offpeak.run()` does not raise on provider failure. A venue that dies at submit,
+`firming.run()` does not raise on provider failure. A venue that dies at submit,
 poll or fallback comes back as a failed `Result` carrying the provider's
 message, and every other job in the batch settles normally. Exceptions are
 reserved for programming errors — a malformed deadline, or a model no configured
@@ -137,8 +137,8 @@ price the wait before the workflow commits to it:
 ```python
 @activity.defn
 async def price_the_wait(docs: list[str], deadline: str) -> float:
-    jobs = [offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
-    return offpeak.quote(jobs, deadline=deadline).spread_usd
+    jobs = [firming.job("claude-haiku-4-5", f"Summarize:\n\n{d}", max_tokens=512) for d in docs]
+    return firming.quote(jobs, deadline=deadline).spread_usd
 ```
 
 It belongs in an activity rather than in workflow code: it reads the clock to
@@ -147,11 +147,11 @@ though it touches no network.
 
 ## What you get back
 
-`offpeak.receipt(results)` settles the run — what ran where, and what the hour
+`firming.receipt(results)` settles the run — what ran where, and what the hour
 was worth:
 
 ```
-OFFPEAK SETTLEMENT ────────────────────────────
+FIRMING SETTLEMENT ────────────────────────────
 jobs      5000 (5000 ok, 120 sync fallback, 0 failed)
 sla       5000/5000 met
 venues    anthropic:batch 3000 · openai:batch 2000
@@ -160,7 +160,7 @@ list      $2,469.00
 paid      $1,234.50
 captured  $1,234.50 (50.0%)
 left      $29.63 on the table (120 job(s) missed the batch tier)
-prices    snapshot 2026-08-28 — override via offpeak.prices
+prices    snapshot 2026-08-28 — override via firming.prices
 ───────────────────────────────────────────────
 ```
 

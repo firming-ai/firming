@@ -1,13 +1,13 @@
 # The published sheet
 
-`offpeak` prices every quote and every receipt against a **bundled snapshot** of
+`firming` prices every quote and every receipt against a **bundled snapshot** of
 numbers other people publish. That snapshot moves when a release moves, and not
 before.
 
 That is deliberate, and it is the reason a receipt is worth anything:
 
 ```
-prices    snapshot 2026-08-28 — override via offpeak.prices
+prices    snapshot 2026-08-28 — override via firming.prices
 ```
 
 A receipt that names its sheet can be re-derived later by anyone. A library that
@@ -45,11 +45,11 @@ still be checkable against the provider pages they name.
 ## Using one
 
 Nothing fetches this for you. The default is always the bundled sheet, so
-`offpeak` keeps working offline and on a locked-down network.
+`firming` keeps working offline and on a locked-down network.
 
 ```python
-import offpeak
-from offpeak import prices
+import firming
+from firming import prices
 
 SHEET = "https://raw.githubusercontent.com/firming-ai/firming/board-data/sheet/latest.json"
 
@@ -104,7 +104,7 @@ was, never half-applied.
 
 ```json
 {
-  "schema": "offpeak.price-sheet/1",
+  "schema": "firming.price-sheet/1",
   "sheet_date": "2026-08-28",
   "generated_utc": "2026-08-28T05:12:00+00:00",
   "batch_discount": 0.5,
@@ -151,7 +151,7 @@ hand-copy rows into a web page.
 
 ```json
 {
-  "schema": "offpeak.settled-runs/1",
+  "schema": "firming.settled-runs/1",
   "summary": {
     "runs": 11, "jobs": 232,
     "list_usd": 0.02645, "paid_usd": 0.01460, "captured_usd": 0.01184,
@@ -218,7 +218,7 @@ provider error strings routinely carry request URLs, org ids and account hints.
 Copying one verbatim into a public file is a single careless paste, and care is
 not a control.
 
-**If you run `offpeak` on your own keys, the same rule binds harder.** Your
+**If you run `firming` on your own keys, the same rule binds harder.** Your
 prompts and outputs are your data, and a receipt has to be provable without
 them — which it is, because every figure on it is aggregate. The handle is
 yours to include or omit.
