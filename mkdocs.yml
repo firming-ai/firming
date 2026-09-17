@@ -1,8 +1,8 @@
 site_name: offpeak
 site_description: Deadline-priced inference — the deadline is the input; the discount follows.
-site_url: https://offpeak-ai.github.io/offpeak/
-repo_url: https://github.com/offpeak-ai/offpeak
-repo_name: offpeak-ai/offpeak
+site_url: https://firming-ai.github.io/firming/
+repo_url: https://github.com/firming-ai/firming
+repo_name: firming-ai/firming
 edit_uri: edit/main/docs/
 
 theme:

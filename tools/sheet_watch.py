@@ -161,7 +161,7 @@ LABELS = ("price change", "copy change", "noise")
 #: visibly distinguishable from one we are genuinely reading.
 _PRICE_FIGURE = re.compile(r"\$\s?\d")
 
-_USER_AGENT = "offpeak-sheet-watch/1.0 (+https://github.com/offpeak-ai/offpeak)"
+_USER_AGENT = "offpeak-sheet-watch/1.0 (+https://github.com/firming-ai/firming)"
 _WS = re.compile(r"[ \t\u00a0]+")
 _ROW_MARKER = "<!-- rows appended below by tools/sheet_watch.py -->"
 

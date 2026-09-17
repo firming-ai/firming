@@ -5,7 +5,7 @@ Thanks for helping build the deadline standard.
 ## Dev setup
 
 ```bash
-git clone https://github.com/offpeak-ai/offpeak
+git clone https://github.com/firming-ai/firming
 cd offpeak
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"

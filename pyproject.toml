@@ -55,10 +55,10 @@ docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.5,<10", "mkdocstrings[python]>=0.2
 
 [project.urls]
 Homepage = "https://off-peak.ai"
-Documentation = "https://offpeak-ai.github.io/offpeak/"
-Repository = "https://github.com/offpeak-ai/offpeak"
-Issues = "https://github.com/offpeak-ai/offpeak/issues"
-Changelog = "https://github.com/offpeak-ai/offpeak/releases"
+Documentation = "https://firming-ai.github.io/firming/"
+Repository = "https://github.com/firming-ai/firming"
+Issues = "https://github.com/firming-ai/firming/issues"
+Changelog = "https://github.com/firming-ai/firming/releases"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/offpeak"]

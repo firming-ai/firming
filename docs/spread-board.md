@@ -35,12 +35,12 @@ serves the California evening has set by midnight. Cheap hours are not
 automatically clean hours, and a board that only recorded price would have
 implied otherwise.
 
-**[→ Read the board](https://github.com/offpeak-ai/offpeak/blob/board-data/nightly/BOARD.md)**
+**[→ Read the board](https://github.com/firming-ai/firming/blob/board-data/nightly/BOARD.md)**
 
 ## How it works
 
 Two passes over the same session, run by
-[a scheduled workflow](https://github.com/offpeak-ai/offpeak/blob/main/.github/workflows/nightly.yml):
+[a scheduled workflow](https://github.com/firming-ai/firming/blob/main/.github/workflows/nightly.yml):
 
 | Pass | When | What it records |
 |---|---|---|
@@ -52,7 +52,7 @@ closes after the 00–05 BST trough, so one span carries both windows the board
 compares.
 
 Output lands on the
-[`board-data` branch](https://github.com/offpeak-ai/offpeak/tree/board-data) —
+[`board-data` branch](https://github.com/firming-ai/firming/tree/board-data) —
 `nightly/BOARD.md` plus the raw JSON per session — because `main` is protected
 and would reject a scheduled bot push.
 
@@ -61,9 +61,9 @@ and would reject a scheduled bot push.
 `BOARD.md` observes; it spends nothing at any venue. Runs that actually
 executed and actually billed go in `nightly/SETTLED.md` on the same branch,
 written by
-[`tools/settle_report.py`](https://github.com/offpeak-ai/offpeak/blob/main/tools/settle_report.py)
+[`tools/settle_report.py`](https://github.com/firming-ai/firming/blob/main/tools/settle_report.py)
 from the receipts in
-[`receipts/`](https://github.com/offpeak-ai/offpeak/tree/main/receipts) — never
+[`receipts/`](https://github.com/firming-ai/firming/tree/main/receipts) — never
 by hand — and published by a manual workflow, because a settlement is a
 deliberate act.
 

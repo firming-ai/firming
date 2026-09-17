@@ -33,7 +33,7 @@ The site lives at **https://off-peak.ai** (bought through Vercel Domains 2026-09
 so DNS is Vercel's; `www.off-peak.ai` 308-redirects to the apex). `offpeak-ai.vercel.app`
 still serves the same deployment as a fallback. If `offpeak.ai` is ever acquired, add it
 to the same project and make it the primary; `off-peak.ai` then becomes the redirect.
-The docs site (`offpeak-ai.github.io/offpeak`) stays where it is and is linked from the
+The docs site (`firming-ai.github.io/firming`) stays where it is and is linked from the
 nav and the footer.
 
 ## Where the numbers come from

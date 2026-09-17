@@ -32,7 +32,7 @@ misleading one:
   scheduler does not read it.
 - **A third venue settles: Google Gemini.** 5 jobs, batch tier, **50.0%
   captured, zero fallbacks**
-  ([receipt](https://github.com/offpeak-ai/offpeak/blob/main/receipts/2026-08-24-gemini-1.json)).
+  ([receipt](https://github.com/firming-ai/firming/blob/main/receipts/2026-08-24-gemini-1.json)).
   Opt-in, like the rest.
 - **Two more venues are written and cannot batch.** Groq answers
   `403 not_available_for_plan`; Mistral answers `402 ... enable billing via the
@@ -55,7 +55,7 @@ misleading one:
   fallback are verified against the live API; its **batch tier is not**, and
   cannot be from here — Groq answers `403 not_available_for_plan` to the entire
   Batch API on an unentitled key. The receipt for that attempt is
-  [`2026-08-23-groq-1.json`](https://github.com/offpeak-ai/offpeak/blob/main/receipts/2026-08-23-groq-1.json):
+  [`2026-08-23-groq-1.json`](https://github.com/firming-ai/firming/blob/main/receipts/2026-08-23-groq-1.json):
   24 real jobs, all of them through the sync fallback at list price, nothing
   captured.
 

@@ -25,7 +25,7 @@ The sheet is a file. Dated, immutable, on the `board-data` branch:
 
 | what | where |
 |---|---|
-| newest sheet | `https://raw.githubusercontent.com/offpeak-ai/offpeak/board-data/sheet/latest.json` |
+| newest sheet | `https://raw.githubusercontent.com/firming-ai/firming/board-data/sheet/latest.json` |
 | a specific sheet | `.../board-data/sheet/2026-08-23.json` |
 | what exists | `.../board-data/sheet/index.json` |
 | settled runs | `.../board-data/nightly/SETTLED.json` |
@@ -51,7 +51,7 @@ Nothing fetches this for you. The default is always the bundled sheet, so
 import offpeak
 from offpeak import prices
 
-SHEET = "https://raw.githubusercontent.com/offpeak-ai/offpeak/board-data/sheet/latest.json"
+SHEET = "https://raw.githubusercontent.com/firming-ai/firming/board-data/sheet/latest.json"
 
 load = prices.load_sheet(SHEET)
 print(load)
@@ -231,7 +231,7 @@ than the accounting one.
 
 ## How drift gets noticed in the first place
 
-[`tools/sheet_watch.py`](https://github.com/offpeak-ai/offpeak/blob/main/tools/sheet_watch.py)
+[`tools/sheet_watch.py`](https://github.com/firming-ai/firming/blob/main/tools/sheet_watch.py)
 hashes the provider pages this sheet cites, daily, and records what moved on
 `board-data`. It never edits the sheet — detection and resolution are different
 jobs, and a tool that rewrote `prices.py` on a hash diff would eventually launder

@@ -70,4 +70,4 @@ A **producer** conforms if every deadline it emits resolves per §2. A **schedul
 
 ---
 
-*Maintained at [github.com/offpeak-ai/offpeak](https://github.com/offpeak-ai/offpeak). Apache-2.0.*
+*Maintained at [github.com/firming-ai/firming](https://github.com/firming-ai/firming). Apache-2.0.*
