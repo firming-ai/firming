@@ -1,50 +1,56 @@
-# offpeak
+# Firming
 
-**Deadline-priced inference.** Same model, same tokens, a later deadline — for half price.
+**Firm prices on AI inference.**
 
 [![CI](https://github.com/firming-ai/firming/actions/workflows/ci.yml/badge.svg)](https://github.com/firming-ai/firming/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
+Firming pays you for the slack in your AI bill. Most backend inference — evals, embeddings, backfills, extraction, agent runs — could be served on a venue's discount lane with a rescue behind it, and nobody would notice. Today that option is either built by hand (a retry ladder, a queue, a fallback) or thrown away, and the bill pays list for it.
+
+Firming's quote is a bid for that option: **20 points under list, firm for the month, same models, same speed budget, never worse than list.** You install a sidecar inside your own perimeter, keep your own keys, and settle once a month against your own venue invoice.
+
+**[firming.ai](https://firming.ai/)** · **[Documentation](https://firming-ai.github.io/firming/)** · [Spec](SPEC.md) · [Spread Board](https://github.com/firming-ai/firming/blob/board-data/nightly/BOARD.md)
+
+## The guarantee
+
+*The sidecar is in build — see [Status](#status). This is the contract it implements.*
+
+| | |
+| --- | --- |
+| **Price** | 20% under the venue's list price on every lane on that month's rate sheet. The sheet is dated and published in advance; the price is firm for the month. |
+| **Speed** | Every request carries a budget (60 seconds by default). The sidecar serves it on the venue's discount lane and rescues it at the standard lane if the discount lane does not fill in time. You never wait past the budget. |
+| **Floor** | Never worse than list. A rescued request is billed at the guaranteed price; the difference is Firming's risk, not yours. |
+| **Perimeter** | The sidecar runs in your infrastructure and talks to the venues with your keys. There is no proxy and no third party in the data path. Nothing about your prompts leaves your network. |
+| **Receipts** | Every request writes a receipt — list price, guaranteed price, lane served, latency. Receipts settle into one statement per lane on the 1st of the month, reconciled line by line to your venue invoice, and the difference is charged or credited. |
+| **Fail-open** | If the sidecar or the rate feed is unreachable, requests go straight to the standard lane at list. Those windows are excluded from the guarantee and shown on the statement. |
+
+The customer-side change is one environment variable:
+
+```bash
+firming serve --port 8787            # pulls the month's rate sheet, prints the eligible lanes
+export OPENAI_BASE_URL=http://localhost:8787/v1
+```
+
+Requests that must not be deferred, even inside the budget, carry `x-firming: standard` and are passed through at list.
+
+## FILL
+
+Firm prices need a market read behind them. **FILL** is Firming's index: the fill rate of the venues' discount lanes — how often a request placed on the discount lane comes back inside the budget — measured continuously, per venue and model, from more than one vantage. FILL sets the rate sheet, and the rate sheet is the price. The public marks and each month's sheet are published on the [`board-data`](https://github.com/firming-ai/firming/tree/board-data) branch of this repository.
+
+## Status
+
+The sidecar, the rate feed and the `firming` package are in build. The PyPI name [`firming`](https://pypi.org/project/firming/) is reserved (0.0.1 placeholder) and ships with the first sidecar release. Phase one covers OpenAI and Gemini.
+
+What is in this repository today:
+
+- **`src/`** — the batch client, published on PyPI as [`offpeak`](https://pypi.org/project/offpeak/) (0.3.0). It is the first ladder Firming built: place a job on the venue's batch lane at 50% off list, and rescue it at the standard lane before the deadline if the batch is at risk. It stays supported and is documented below.
+- **`web/`** — the site and the remote MCP connector.
+- **`board-data`** — the daily Spread Board, the price-sheet watch and the FILL output, written by workflows only.
+- **[SPEC.md](SPEC.md)** — the deadline and receipt semantics the batch client implements.
+
+## The batch client
+
 [![PyPI](https://img.shields.io/pypi/v/offpeak)](https://pypi.org/project/offpeak/)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-
-OpenAI, Anthropic, and Google all sell batch inference at **50% off list price**. Almost nobody uses it, because no API lets work say it can wait: every token runs "now" by default, and the batch workflow — build a file, upload, poll, download, match results back up — is enough friction that urgency gets bought by accident.
-
-`offpeak` gives your code one new argument.
-
-```python
-import offpeak
-
-jobs = [offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{doc}") for doc in docs]
-
-results = offpeak.run(jobs, deadline="06:00")   # done by 6am, at batch prices
-
-print(offpeak.receipt(results))
-```
-
-```
-OFFPEAK SETTLEMENT ────────────────────────────
-jobs      1,000 (1,000 ok, 2 sync fallback)
-sla       1,000/1,000 met
-venues    anthropic:batch 1,000
-tokens    12,410,332 in · 3,104,551 out
-list      $27.93
-paid      $14.02
-captured  $13.91 (49.8%)
-prices    snapshot 2026-08-21 — override via offpeak.prices
-───────────────────────────────────────────────
-```
-
-**[off-peak.ai](https://off-peak.ai/)** · **[Documentation](https://firming-ai.github.io/firming/)** · [Quickstart](https://firming-ai.github.io/firming/quickstart/) · [Spec](https://firming-ai.github.io/firming/spec/) · [Roadmap](https://firming-ai.github.io/firming/roadmap/)
-
-## What it does
-
-- **Know the price before you spend it.** `quote(jobs, deadline=...)` prices a run against the published sheets with no API calls and no key — list versus batch, per venue, plus what the wait is worth.
-- **One argument, not a workflow.** `run(jobs, deadline=...)` handles batching, submission, polling, collection, and result matching across providers.
-- **Deadlines are guarded, not hoped for.** If a batch hasn't landed by the time the remaining window shrinks to a risk buffer, `offpeak` cancels and re-runs the stragglers synchronously at list price. You state the deadline; it gets met.
-- **Every run settles a receipt.** List cost, paid cost, captured spread — arithmetic against public price sheets, not estimates.
-- **Your keys, your perimeter.** `offpeak` talks directly to the providers with your own API keys. There is no proxy and no third party in the data path.
-- **Zero-dependency core.** Provider SDKs load only via extras.
-
-## Install
 
 ```bash
 pip install "offpeak[all]"        # OpenAI + Anthropic venues
@@ -52,9 +58,38 @@ pip install "offpeak[anthropic]"  # or one provider
 pip install "offpeak[openai]"
 ```
 
-Venues use the standard environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`), or pass a configured client: `OpenAIBatch(client=my_client)`.
+```python
+import offpeak
 
-Five more venues are in the tree and opt-in — each wants its own key and its own extra, and is passed to `run()` explicitly rather than routed to by default:
+jobs = [offpeak.job("claude-haiku-4-5", f"Summarize:\n\n{doc}") for doc in docs]
+
+print(offpeak.quote(jobs, deadline="06:00"))   # list vs batch, per venue, before any call
+results = offpeak.run(jobs, deadline="06:00")  # batch lane, rescued at list if at risk
+print(offpeak.receipt(results))                # list cost, paid cost, captured spread
+```
+
+- **Know the price before you spend it.** `quote(jobs, deadline=...)` prices a run against the published sheets with no API calls and no key. Token counts come from the job where it knows them; otherwise the figure is a labeled estimate, and a quote with no output signal is marked a **floor**. Pass `assumed_output_ratio=` or `metadata={"expected_output_tokens": ...}` for a priced estimate.
+- **One argument, not a workflow.** `run(jobs, deadline=...)` handles batching, submission, polling, collection and result matching across providers. Results come back in input order, each with a per-job `Receipt`.
+- **The deadline is guarded, not hoped for.** When the remaining window reaches the **risk buffer** (default 15% of the window, clamped to 1–10 minutes), unfinished jobs are cancelled and re-run on the standard lane at list. Set `fallback="none"` to report them instead. Deadlines take `"06:00"`, `"4h"`, ISO 8601, `datetime` or `timedelta` — the full semantics are in [SPEC.md](SPEC.md).
+- **Every run settles a receipt.** List cost, paid cost, captured spread — arithmetic against public price sheets, not estimates. Unknown models settle with `cost = None` rather than a guess; register your own with `offpeak.prices.register_price("my-fine-tune", input_per_m=4.0, output_per_m=16.0)`.
+- **Your keys, your perimeter.** The client talks directly to the providers with your own API keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or a configured client such as `OpenAIBatch(client=my_client)`). No proxy, no third party in the data path.
+- **Zero-dependency core.** Provider SDKs load only via extras.
+
+**When the process can't wait.** `run()` blocks for as long as the batch takes — right for a Temporal activity or an Airflow task, wrong for a laptop that sleeps, a CI step with a timeout, or a serverless function. Keep the run's state as a value instead:
+
+```python
+ticket = offpeak.submit(jobs, deadline="06:00")   # returns immediately
+ticket.save("run.json")                            # disk, a DB row, S3 — anywhere
+
+# later, in another process
+ticket = offpeak.Ticket.load("run.json")
+results = offpeak.collect(ticket)                  # same deadline, same fallback
+print(offpeak.receipt(results))
+```
+
+`collect(ticket, wait=False)` is one non-blocking sweep; `status(ticket)` peeks. `run()` is exactly `collect(submit(...))`. The ticket carries handles, never keys.
+
+**More venues.** Five further venues are in the tree and opt-in — each wants its own key and extra, and is passed to `run()` explicitly:
 
 | Venue | Models | Extra | Key | Lane |
 | --- | --- | --- | --- | --- |
@@ -62,7 +97,7 @@ Five more venues are in the tree and opt-in — each wants its own key and its o
 | `mistral:batch` | `mistral-*`, `codestral`, … | `mistral` | `MISTRAL_API_KEY` | batch, window in hours |
 | `gemini:batch` | `gemini-*` | `gemini` | `GEMINI_API_KEY` | batch, 24h |
 | `qwen:batch` | `qwen*` (Model Studio spelling) | `qwen` | `DASHSCOPE_API_KEY` | batch, 24h–336h window, per-region |
-| `deepseek:clock` | `deepseek-*` | `deepseek` | `DEEPSEEK_API_KEY` | **clock** — no batch API; half price off-peak, held until the boundary |
+| `deepseek:clock` | `deepseek-*` | `deepseek` | `DEEPSEEK_API_KEY` | **clock** — no batch API; priced by the hour, held until the cheap window |
 
 ```python
 from offpeak.venues import DeepSeekClock, QwenBatch
@@ -70,108 +105,20 @@ from offpeak.venues import DeepSeekClock, QwenBatch
 results = offpeak.run(jobs, deadline="06:00", venues=[DeepSeekClock(), QwenBatch(region="intl")])
 ```
 
-DeepSeek is the first venue that is not a batch tier: peak is 01:00–04:00 and 06:00–10:00 UTC on weekdays, everything else is off-peak at half the peak rate, and the driver holds a job until the clock is cheap rather than uploading it anywhere. Neither DeepSeek nor Qwen has a live receipt yet.
+DeepSeek is the one venue that prices by the clock rather than by lane: weekday peak is 01:00–04:00 and 06:00–10:00 UTC, everything else is half the peak rate, and the driver holds a job until the rate is cheap rather than uploading it anywhere. Neither DeepSeek nor Qwen has a live receipt yet.
 
-## The free quote
-
-What is the wait worth? Ask before you spend anything — `quote()` makes no API calls and needs no key.
+**Quote from the CLI.**
 
 ```bash
 python -m offpeak quote --model gpt-5.6-luna --input-tokens 800 --output-tokens 200 --jobs 5000
 ```
 
-```
-OFFPEAK QUOTE ─────────────────────────────────
-jobs      5000 across 1 venue(s)
-deadline  2026-08-21 21:11 PDT (24.0h out)
-tokens    4,000,000 in · 1,000,000 out
-
-  openai:batch      5000 job(s)  list $2.00  batch $1.00  save $1.00 (50.0%)
-
-list      $2.00   (run now, synchronously)
-batch     $1.00   (run by the deadline)
-save      $1.00 (50.0%)
-risk      deadline is inside the 24h batch window — the SLA rests on the sync fallback, which pays list
-basis     input explicit; output explicit
-prices    snapshot 2026-08-21 — estimate only, not a bill
-───────────────────────────────────────────────
-```
-
-From Python, `offpeak.quote(jobs, deadline="06:00")` takes the same jobs you would pass to `run()`. Token counts come from the job where it knows them (`metadata={"input_tokens": ..., "output_tokens": ...}`, or `max_tokens` as an output ceiling) and are a labeled chars/4 estimate where it does not — every figure reports its provenance in `basis`, and a quote with no output signal is marked a **floor**, not an estimate.
-
-If you do know roughly what the model will write, say so and get a priced number instead — `quote(jobs, deadline=..., assumed_output_ratio=0.25)`, or `metadata={"expected_output_tokens": 300}` on a single job. Those quotes are marked **EST**, distinct from a floor. Both are opt-in: absent one, `offpeak` assumes nothing on your behalf.
-
-## Deadlines
-
-Deadlines are how software says "this can wait" — the full semantics live in [SPEC.md](SPEC.md).
-
-| Form | Meaning |
-| --- | --- |
-| `"06:00"` | the next 6am, local time (the canonical session form) |
-| `"4h"`, `"90m"`, `"2d"` | relative to now |
-| `"2026-08-21T06:00:00-07:00"` | ISO 8601, absolute |
-| `datetime` / `timedelta` / seconds | native Python forms |
-
-## How a run works
-
-1. Jobs are grouped by venue (`claude-*` → Anthropic Message Batches, `gpt-*`/`o*` → OpenAI Batch) and submitted at the batch tier — 50% off list.
-2. `offpeak` polls the venues, backing off while the window is long.
-3. When remaining time reaches the **risk buffer** (default: 15% of the window, clamped to 1–10 minutes), unfinished jobs are cancelled and re-run synchronously so the deadline holds. Set `fallback="none"` to report them instead.
-4. Results come back in input order, each with a per-job `Receipt`; `offpeak.receipt(results)` settles the run.
-
-```python
-results = offpeak.run(
-    jobs,
-    deadline="06:00",
-    fallback="sync",       # meet the deadline at list price if the batch is at risk
-    risk_buffer=600,       # seconds held in reserve (optional)
-)
-```
-
-## When the process can't wait
-
-`run()` blocks for as long as the batch takes — right for a Temporal activity or an Airflow task, wrong for a laptop that sleeps, a CI step with a timeout, or a serverless function. For those, keep the run's state as a value:
-
-```python
-ticket = offpeak.submit(jobs, deadline="06:00")   # returns immediately
-ticket.save("tonight.json")                        # disk, a DB row, S3 — anywhere
-
-# later, in another process (a 06:00 cron, a second CI job)
-ticket = offpeak.Ticket.load("tonight.json")
-results = offpeak.collect(ticket)                  # same deadline, same fallback
-print(offpeak.receipt(results))
-```
-
-`collect(ticket, wait=False)` is one non-blocking sweep: results if the run can settle now, `None` if the batch is still open. `status(ticket)` peeks. `run()` is exactly `collect(submit(...))`.
-
-## Receipts and prices
-
-Receipts are computed against a bundled snapshot of public list prices (batch = 50% off list, as published). Providers change prices — verify and override at runtime:
-
-```python
-import offpeak
-
-offpeak.prices.register_price("my-fine-tune", input_per_m=4.0, output_per_m=16.0)
-```
-
-Unknown models settle with `cost = None` rather than a guess. The sheet also carries what the venues charge for *urgency* — `get_fast_price()`, `urgency_spread()` — and flags list prices that are promotional, with the date and the price they decay to: `promo_decay("gpt-5.6-sol")` is `(1.25, 1.5)` after 2026-11-21.
-
-## What this is (and the roadmap)
-
-`offpeak` is the open client and spec for a simple claim: **intelligence has a time value**. A large share of AI work — embeddings, evals, backfills, report generation, daily agent runs — has no human waiting on it, and the venues already sell that patience at 50% off. This library is the missing workflow.
-
-The token side is wider than the headline discount. Patience sells at 50% off — a 2.0x spread — and haste is priced too: hold the model and venue constant and `gpt-5.6-sol` costs **$8.00 / $40.00** per 1M on OpenAI's fast tier against **$2.00 / $10.00** on its batch tier, a **4x intra-venue urgency spread** for the hour alone ([source](https://developers.openai.com/api/docs/pricing); sol's standard rate is promotional at least through 2026-11-21, and both tiers are defined off it, so the ratio outlives the prices). It is data, not prose: `offpeak.prices.urgency_spread("gpt-5.6-sol")` returns `4.0`.
-
-The **[Spread Board](https://github.com/firming-ai/firming/blob/board-data/nightly/BOARD.md)** marks the same claim against open grid data daily — GB power and carbon plus CAISO SP15 and ERCOT Houston peak/off-peak spreads, alongside the published token spreads. ERCOT Houston marked 3.94x on the session of 2026-08-20; a venue charges 4x for the same impatience.
-
-The roadmap follows the same interface upward: more venues (Google batch, spot capacity, off-peak windows on your own GPUs), queue-latency forecasting instead of a fixed risk buffer, portfolio placement across venues, energy- and carbon-aware scheduling with per-job receipts. The venue interface (`offpeak.Venue`) is deliberately the extension point — a venue is anywhere deferred work can run.
-
-A hosted desk that does the forecasting, cross-venue portfolio scheduling, and SLA insurance at fleet scale — payloads never leaving your perimeter — is being built by the same team. The SDK and the deadline spec stay open, Apache-2.0.
+Prices are a bundled snapshot of public list sheets; providers change them, so verify and override at runtime via `offpeak.prices`. The sheet also carries what venues charge for *urgency* — `get_fast_price()`, `urgency_spread()` — and flags promotional list prices with the date and price they decay to.
 
 ## Contributing
 
-Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Spec changes start as issues against [SPEC.md](SPEC.md).
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Spec changes start as issues against [SPEC.md](SPEC.md). `main` is protected: branch, PR, four green checks; tests are network-free.
 
 ## License
 
-Apache-2.0 © Offpeak
+Apache-2.0 © Firming
