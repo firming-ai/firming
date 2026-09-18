@@ -4,7 +4,7 @@ Operational rules for this repository. Public repo — nothing strategic here.
 
 ## Commits
 
-- Author every commit as `Firming <ops@firming.ai>`.
+- Author every commit as `Firming <ops@firming.ai>` — the org identity (the `firming-ops` machine account). Never a personal name or address.
 - No co-author trailers of any kind.
 - An authors-guard CI job enforces this.
 
